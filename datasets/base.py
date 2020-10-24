@@ -11,7 +11,7 @@ class AbstractBaseDataset(ABC):
                  download_if_missing: bool = True, data_folder: str = None):
 
         if data_folder is None:
-            data_folder = join(dirname(__file__), 'datasets', name)
+            data_folder = join(dirname(__file__), 'downloaded_datasets', name)
 
         self.data_folder = data_folder
         self.name = name
