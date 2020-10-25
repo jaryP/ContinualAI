@@ -9,6 +9,11 @@ import numpy as np
 from datasets.base import LabeledDataset
 
 
+# TODO: Aggiungere FashionMNIST
+# TODO: Aggiungere QMNIST
+# TODO: Aggiungere KMNIST
+
+
 class MNIST(LabeledDataset):
     url = {'train': {'images': 'http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz',
                      'labels': 'http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz'},
