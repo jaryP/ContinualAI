@@ -1,20 +1,20 @@
 import codecs
 import gzip
 from os.path import join
-from typing import Callable, Tuple
+from typing import Callable
 from urllib.request import urlretrieve
 
 import numpy as np
-
-from datasets.base import LabeledDataset
+# from datasets import SupervisedDownloadableDataset
 
 
 # TODO: Aggiungere FashionMNIST
 # TODO: Aggiungere QMNIST
 # TODO: Aggiungere KMNIST
+from datasets.base import SupervisedDownloadableDataset
 
 
-class MNIST(LabeledDataset):
+class MNIST(SupervisedDownloadableDataset):
     url = {'train': {'images': 'http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz',
                      'labels': 'http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz'},
            'test': {'images': 'http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz',
@@ -73,3 +73,20 @@ class MNIST(LabeledDataset):
         for _, type in self.url.items():
             for _, url in type.items():
                 urlretrieve(url, join(self.data_folder, url.rpartition('/')[2]))
+
+
+m = MNIST()
+m.train_split = None
+
+# m.split_dataset(0.2)
+#
+# m.train()
+# print(len(m))
+# m.test()
+# print(len(m))
+# i, x, y = m[[1, 20, 30]]
+# print(len(x))
+
+# for i in m:
+#     # print(i)
+#     pass

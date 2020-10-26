@@ -1,6 +1,7 @@
-__all__ = ['MNIST', 'UnlabeledDataset', 'LabeledDataset', 'SplitLabeledDataset', 'SplitUnlabeledDataset',
-           'AbstractBaseDataset', 'split_dataset']
+__all__ = ['MNIST', 'UnsupervisedDataset', 'SupervisedDataset',  'split_dataset',
+           'SupervisedDownloadableDataset', 'UnsupervisedDownloadableDataset']
 
-from .MNIST import MNIST
-from .base import UnlabeledDataset, LabeledDataset, SplitLabeledDataset, SplitUnlabeledDataset, AbstractBaseDataset
+from .base import UnsupervisedDataset, SupervisedDataset, DownloadableDataset, UnsupervisedDownloadableDataset, \
+    SupervisedDownloadableDataset
 from .utils import split_dataset
+from .MNIST import MNIST
