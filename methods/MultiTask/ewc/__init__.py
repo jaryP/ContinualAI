@@ -1,0 +1,1 @@
+from .EWC import ElasticWeightConsolidation

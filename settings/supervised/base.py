@@ -8,7 +8,8 @@ from datasets import SupervisedDataset
 
 
 class ClassificationTask(SupervisedDataset):
-    def __init__(self, x: np.ndarray, task_y: np.ndarray, dataset_y: np.ndarray, train: Union[list, np.ndarray],
+    def __init__(self, x: np.ndarray, task_y: np.ndarray, dataset_y: np.ndarray, task_index: int,
+                 train: Union[list, np.ndarray],
                  test: Union[list, np.ndarray] = None, dev: Union[list, np.ndarray] = None,
                  transformer: Callable = None,
                  target_transformer: Callable = None, **kwargs):
@@ -17,6 +18,8 @@ class ClassificationTask(SupervisedDataset):
         self._task_y = task_y
         self._dataset_y = dataset_y
 
+        self._task_index = task_index
+
         self._dataset_labels = sorted(set(dataset_y))
         self._task_labels = sorted(set(task_y))
 
@@ -24,6 +27,10 @@ class ClassificationTask(SupervisedDataset):
 
         super().__init__(x=x, y=task_y, train=train, test=test, dev=dev, transformer=transformer,
                          target_transformer=target_transformer, **kwargs)
+
+    @property
+    def index(self):
+        return self._task_index
 
     def task_labels(self):
         self._current_labels = 'task'

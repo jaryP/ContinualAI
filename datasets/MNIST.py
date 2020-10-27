@@ -5,12 +5,12 @@ from typing import Callable
 from urllib.request import urlretrieve
 
 import numpy as np
-# from datasets import SupervisedDownloadableDataset
 
 
 # TODO: Aggiungere FashionMNIST
 # TODO: Aggiungere QMNIST
 # TODO: Aggiungere KMNIST
+
 from datasets.base import SupervisedDownloadableDataset
 
 
@@ -76,21 +76,3 @@ class MNIST(SupervisedDownloadableDataset):
         for _, type in self.url.items():
             for _, url in type.items():
                 urlretrieve(url, join(self.data_folder, url.rpartition('/')[2]))
-
-
-if __name__ == '__main__':
-    m = MNIST()
-    m.train_split = None
-
-    m.split_dataset(0.2)
-
-    m.train()
-    print(len(m))
-    m.test()
-    print(len(m))
-    i, x, y = m[[1, 20, 30]]
-    print(len(x))
-
-    # for i in m:
-    #     print(i[0])
-    #     pass

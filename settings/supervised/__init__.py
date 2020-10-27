@@ -1,2 +1,2 @@
-from .base import IncrementalProblem, ContinualLearningSupervisedProblem
+from .base import IncrementalProblem, ContinualLearningSupervisedProblem, ClassificationTask
 from .incremental import SingleIncrementalTask, MultiTask
