@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from operator import itemgetter
 from os import makedirs
 from os.path import join, dirname, exists
 from typing import Callable, Union, Tuple
@@ -21,7 +20,7 @@ class UnsupervisedDataset(object):
         assert len(x) == sum(map(len, [train, test, dev]))
 
         self._x = x
-        self.train_split, self.test_split, self.dev_split = train, test, dev
+        self._train_split, self._test_split, self._dev_split = train, test, dev
 
         self._split = 'train'
         self._current_split_idx = self.train_split
@@ -30,24 +29,8 @@ class UnsupervisedDataset(object):
 
         self.__initialized = True
 
-    # def __setattr__(self, key, value):
-    #     if key in ['train_split', 'test_split', 'dev_split', '_split', '_x', '__initialized'] \
-    #             and hasattr(self, '__initialized'):
-    #         raise ValueError()
-    #
-    #     super().__setattr__(key, value)
-
     def __getitem__(self, item):
-        if isinstance(item, slice):
-            start, stop, step = item.indices(len(self))
-            idx = itemgetter(*range(start, stop, step))(self._current_split_idx)
-            return idx, [self.transformer(self._x[i]) for i in idx]
-        elif isinstance(item, (tuple, list)):
-            return item, [self.transformer(self._x[i]) for i in item]
-        elif isinstance(item, int):
-            return item, self.transformer(self._x[self._current_split_idx[item]])
-        else:
-            raise NotImplementedError()
+        return item, self.transformer(self._x[item])
 
     def __len__(self):
         return len(self._current_split_idx)
@@ -58,11 +41,23 @@ class UnsupervisedDataset(object):
 
     @property
     def x(self):
-        return [self._x[i] for i in self._current_split_idx]
+        return self.transformer(self._x[self._current_split_idx])
 
     @property
     def data(self):
         return self.x
+
+    @property
+    def train_split(self):
+        return self.train_split
+
+    @property
+    def test_split(self):
+        return self.test_split
+
+    @property
+    def dev_split(self):
+        return self.dev_split
 
     def train(self):
         self._split = 'train'
@@ -81,8 +76,7 @@ class UnsupervisedDataset(object):
         self._current_split_idx = self.train_split + self.test_split + self.dev_split
 
     def preprocess(self, f: Callable):
-        for i, x in enumerate(self._x):
-            self._x[i] = f(x)
+        self._x = f(self._x)
 
     def split_dataset(self, test_split: float = 0.2, dev_split: float = 0.0,
                       random_state: Union[np.random.RandomState, int] = None):
@@ -91,7 +85,7 @@ class UnsupervisedDataset(object):
         assert dev_split >= 0
         assert test_split + dev_split < 1
 
-        self.train_split, self.test_split, self.dev_split = \
+        self._train_split, self._test_split, self._dev_split = \
             split_dataset(self._x, test_split=test_split, dev_split=dev_split, random_state=random_state)
 
 
@@ -106,38 +100,28 @@ class SupervisedDataset(UnsupervisedDataset):
 
         self.target_transformer = target_transformer if target_transformer is not None else lambda z: z
 
-        self.labels = sorted(list(set(y)))
+        self._labels = sorted(list(set(y)))
 
     def __getitem__(self, item):
         item, x = super().__getitem__(item)
-
-        if isinstance(item, (tuple, list)):
-            y = [self.transformer(self._y[i]) for i in item]
-        elif isinstance(item, int):
-            y = self.transformer(self._y[item])
-        else:
-            raise NotImplementedError()
+        y = self.target_transformer(self._y[item])
 
         return item, x, y
 
-    # def __setattr__(self, key, value):
-    #     if key in ['_y'] \
-    #             and hasattr(self, '__initialized'):
-    #         raise ValueError()
-    #
-    #     super().__setattr__(key, value)
+    @property
+    def labels(self):
+        return self.labels
 
     @property
     def y(self):
-        return [self._y[i] for i in self._current_split_idx]
+        return self.target_transformer(self._y[self._current_split_idx])
 
     @property
     def data(self):
         return self.x, self.y
 
     def preprocess_targets(self, f: Callable):
-        for i, y in enumerate(self._y):
-            self._y[i] = f(y)
+        self._y = f(self._y)
 
     def split_dataset(self, test_split: float = 0.2, dev_split: float = 0.0, balanced_split: bool = True,
                       random_state: Union[np.random.RandomState, int] = None):
@@ -146,7 +130,7 @@ class SupervisedDataset(UnsupervisedDataset):
         assert dev_split >= 0
         assert test_split + dev_split < 1
 
-        self.train_split, self.test_split, self.dev_split = \
+        self._train_split, self._test_split, self._dev_split = \
             split_dataset(self._y, balance_labels=True,
                           test_split=test_split, dev_split=dev_split, random_state=random_state)
 
@@ -193,7 +177,7 @@ class UnsupervisedDownloadableDataset(DownloadableDataset, UnsupervisedDataset, 
                                                   **kwargs)
 
     @abstractmethod
-    def load_dataset(self) -> Tuple[list, Tuple[list, list, list]]:
+    def load_dataset(self) -> Tuple[np.ndarray, Tuple[list, list, list]]:
         raise NotImplementedError
 
 
@@ -211,5 +195,5 @@ class SupervisedDownloadableDataset(DownloadableDataset, SupervisedDataset, ABC)
                                                   **kwargs)
 
     @abstractmethod
-    def load_dataset(self) -> Tuple[Tuple[list, list], Tuple[list, list, list]]:
+    def load_dataset(self) -> Tuple[Tuple[np.ndarray, np.ndarray], Tuple[list, list, list]]:
         raise NotImplementedError

@@ -67,6 +67,9 @@ class MNIST(SupervisedDownloadableDataset):
                     else:
                         y.extend(self._load_label(data))
 
+        x = np.asarray(x)
+        y = np.asarray(y)
+
         return (x, y), (train, test, dev)
 
     def download_dataset(self):
@@ -75,18 +78,19 @@ class MNIST(SupervisedDownloadableDataset):
                 urlretrieve(url, join(self.data_folder, url.rpartition('/')[2]))
 
 
-m = MNIST()
-m.train_split = None
+if __name__ == '__main__':
+    m = MNIST()
+    m.train_split = None
 
-# m.split_dataset(0.2)
-#
-# m.train()
-# print(len(m))
-# m.test()
-# print(len(m))
-# i, x, y = m[[1, 20, 30]]
-# print(len(x))
+    m.split_dataset(0.2)
 
-# for i in m:
-#     # print(i)
-#     pass
+    m.train()
+    print(len(m))
+    m.test()
+    print(len(m))
+    i, x, y = m[[1, 20, 30]]
+    print(len(x))
+
+    # for i in m:
+    #     print(i[0])
+    #     pass
