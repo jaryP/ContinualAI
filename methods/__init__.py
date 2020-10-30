@@ -1,1 +1,1 @@
-from methods.base import NaiveMethod
+from methods.base import BaseMethod

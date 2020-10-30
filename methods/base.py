@@ -19,7 +19,7 @@ class Container(object):
         self.others_parameters = dict()
 
 
-class NaiveMethod(torch.nn.Module):
+class BaseMethod(torch.nn.Module):
     def __init__(self):
         super().__init__()
 

@@ -1,3 +1,5 @@
+__all__ = ['Evaluator']
+
 from collections import defaultdict
 from itertools import chain
 
@@ -45,22 +47,37 @@ class Evaluator:
 
     @property
     def task_matrix(self) -> dict:
-        return self._r
+        r = {}
+        for name, results in self._scores.items():
+            k = sorted(results.keys(), reverse=True)
+            _r = np.zeros((len(k), len(k)))
+            for i, ck in enumerate(k):
+                res = results[ck][ck]
+                res = res[1:]  # remove the first score, which is calculated before the training
+                mx = np.argmax(res)
+                _r[ck, ck] = res[mx]
+                for j in range(i + 1, len(k)):
+                    ek = k[j]
+                    res = results[ek][ck]
+                    _r[ck, ek] = res[mx]
+
+            r[name] = _r
+
+        return r
 
     def classification_results(self) -> dict:
         return self._scores
 
     def cl_results(self) -> dict:
         res = {}
+        _r = self.task_matrix
         for name, m in self._classification_metrics:
-            r = self._r[name]
-            res[name] = {n: m(r) for n, m in self._cl_metrics}
+            res[name] = {n: m(_r[name]) for n, m in self._cl_metrics}
         return res
 
     def others_metrics_results(self) -> dict:
         res = {}
         for name, m in self._others_metrics:
-            # r = self._r[name]
             res[name] = m()
         return res
 
@@ -82,24 +99,12 @@ class Evaluator:
         if current_task not in self._labels:
             self._labels[evaluated_task] = set(y_true)
 
-        mx = max(current_task, evaluated_task) + 1
-
         for name, m in self._classification_metrics:
-            r = self._r.get(name, None)
-
-            if r is None:
-                r = np.zeros((mx, mx), dtype=float)
-            elif r.shape[0] < mx:
-                com = np.zeros((mx, mx), dtype=r.dtype)
-                com[:r.shape[0], :r.shape[1]] = r
-                r = com
 
             _m = m(y_true, y_pred, evaluator=self)
-            r[current_task, evaluated_task] = _m
-            self._r[name] = r
+            _s = self._scores.get(name, defaultdict(lambda: defaultdict(list)))
 
-            _s = self._scores.get(name, defaultdict(list))
-            _s[evaluated_task].append(_m)
+            _s[evaluated_task][current_task].append(_m)
             self._scores[name] = _s
 
     def add_cl_metric(self, metric: ContinualLearningMetric):

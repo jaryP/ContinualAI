@@ -12,11 +12,11 @@ import torch.nn.functional as F
 # from continual_ai.cl_strategies import NaiveMethod, Container
 # from continual_ai.iterators import Sampler
 # from continual_ai.utils import ExperimentConfig
-from methods import NaiveMethod
+from methods import BaseMethod
 from settings.supervised import ClassificationTask
 
 
-class EmbeddingRegularization(NaiveMethod):
+class EmbeddingRegularization(BaseMethod):
     """
     @article{POMPONI2020,
     title = "Efficient continual learning in neural networks with embedding regularization",
@@ -34,7 +34,7 @@ class EmbeddingRegularization(NaiveMethod):
                  distance: str = 'cosine',
                  random_state: Union[np.random.RandomState, int] = None, **kwargs):
 
-        NaiveMethod.__init__(self)
+        BaseMethod.__init__(self)
 
         self.memorized_task_size = task_memory_size
         if sample_size is None:

@@ -5,11 +5,11 @@ from copy import deepcopy
 
 import torch
 
-from methods import NaiveMethod
+from methods import BaseMethod
 from settings.supervised import ClassificationTask
 
 
-class ElasticWeightConsolidation(NaiveMethod):
+class ElasticWeightConsolidation(BaseMethod):
     """
     @article{kirkpatrick2017overcoming,
       title={Overcoming catastrophic forgetting in neural networks},

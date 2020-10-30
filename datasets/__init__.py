@@ -4,4 +4,4 @@ __all__ = ['MNIST', 'UnsupervisedDataset', 'SupervisedDataset',  'split_dataset'
 from .base import UnsupervisedDataset, SupervisedDataset, DownloadableDataset, UnsupervisedDownloadableDataset, \
     SupervisedDownloadableDataset
 from .utils import split_dataset
-from .MNIST import MNIST
+from .mnist import MNIST
