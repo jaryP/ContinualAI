@@ -8,6 +8,8 @@ import pickle
 from datasets import SupervisedDownloadableDataset
 
 
+__all__ = ['CIFAR100', 'CIFAR10']
+
 class CIFAR10(SupervisedDownloadableDataset):
     def _check_exists(self) -> bool:
         return os.path.exists(os.path.join(self.data_folder, self.url.rpartition('/')[2]))

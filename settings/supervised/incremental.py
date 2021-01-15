@@ -6,7 +6,7 @@ from datasets import SupervisedDataset
 from settings.supervised.base import IncrementalProblem, ClassificationTask
 
 
-def get_labels_set(labels: Union[list, np.ndarray], labels_per_task: int, shuffle_labels: bool = False,
+def get_labels_set(labels: Union[tuple, list, np.ndarray], labels_per_task: int, shuffle_labels: bool = False,
                    random_state: Union[np.random.RandomState, int] = None):
 
     if shuffle_labels:
@@ -50,9 +50,9 @@ class MultiTask(IncrementalProblem):
             _, x, dataset_y = dataset[indexes]
             task_y = labels_map[dataset_y]
 
-            train = list(filter(lambda z: z in indexes, dataset.train_split))
-            test = list(filter(lambda z: z in indexes, dataset.test_split))
-            dev = list(filter(lambda z: z in indexes, dataset.dev_split))
+            train = list(filter(lambda z: z in indexes, dataset.train_indices))
+            test = list(filter(lambda z: z in indexes, dataset.test_indices))
+            dev = list(filter(lambda z: z in indexes, dataset.dev_indices))
 
             task = ClassificationTask(x=x, dataset_y=dataset_y, task_y=task_y, train=train, test=test, dev=dev,
                                       task_index=len(tasks),
@@ -90,9 +90,9 @@ class SingleIncrementalTask(IncrementalProblem):
             _, x, dataset_y = dataset[indexes]
             task_y = labels_map[dataset_y]
 
-            train = list(filter(lambda z: z in indexes, dataset.train_split))
-            test = list(filter(lambda z: z in indexes, dataset.test_split))
-            dev = list(filter(lambda z: z in indexes, dataset.dev_split))
+            train = list(filter(lambda z: z in indexes, dataset.train_indices))
+            test = list(filter(lambda z: z in indexes, dataset.test_indices))
+            dev = list(filter(lambda z: z in indexes, dataset.dev_indices))
 
             task = ClassificationTask(x=x, dataset_y=dataset_y, task_y=task_y, train=train, test=test, dev=dev,
                                       transformer=dataset.transformer, target_transformer=dataset.target_transformer)

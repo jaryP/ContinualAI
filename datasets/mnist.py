@@ -4,8 +4,9 @@ from os.path import join, exists
 from typing import Callable, Tuple
 from urllib.request import urlretrieve
 import numpy as np
-
 from datasets.base import SupervisedDownloadableDataset
+
+__all__ = ['MNIST', 'K49MNIST', 'KMNIST']
 
 
 class MNIST(SupervisedDownloadableDataset):
