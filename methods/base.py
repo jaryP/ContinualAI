@@ -1,4 +1,11 @@
+from abc import abstractmethod, ABC
+
 import torch
+from torch import nn
+
+from settings.supervised import MultiTask
+from solvers.base import Solver
+from solvers.multi_task import MultiHeadsSolver
 
 
 class Container(object):
@@ -19,9 +26,16 @@ class Container(object):
         self.others_parameters = dict()
 
 
-class BaseMethod(torch.nn.Module):
+class BaseMethod(ABC, torch.nn.Module):
     def __init__(self):
         super().__init__()
+
+    def get_parameters(self, current_task: int, network: nn.Module, solver: Solver):
+        parameters = []
+        parameters.extend(network.parameters())
+        if isinstance(solver, MultiHeadsSolver):
+            parameters.extend(solver.heads[current_task].parameters())
+        return parameters
 
     def on_epoch_starts(self, *args, **kwargs):
         pass

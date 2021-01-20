@@ -12,6 +12,7 @@ from methods.MultiTask.gem.utils import qp
 from settings.supervised import ClassificationTask
 
 
+
 class GradientEpisodicMemory(BaseMethod):
     """
     @inproceedings{lopez2017gradient,
@@ -50,9 +51,20 @@ class GradientEpisodicMemory(BaseMethod):
         idxs = np.arange(len(task))
         idxs = self.RandomState.choice(idxs, self.task_memory_size, replace=False)
 
-        _, images, labels = task[idxs]
+        images, labels = [], []
+        encoder.eval()
 
-        self.task_memory.append((task.index, images.detach(), labels.detach()))
+        with torch.no_grad():
+            for i in idxs:
+                _, im, l = task[i]
+                im = im.cpu()
+                images.append(im)
+                labels.append(l)
+
+        images = torch.stack(images, 0)
+        labels = torch.tensor(labels)
+
+        self.task_memory.append((task.index, images.detach(), labels))
 
     def after_back_propagation(self, encoder: torch.nn.Module, solver, *args, **kwargs):
 

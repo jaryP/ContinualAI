@@ -8,7 +8,7 @@ from torch import nn
 from solvers.base import Solver
 
 
-class MultiTaskSolver(Solver):
+class MultiHeadsSolver(Solver):
     def __init__(self, input_dim: Union[int, tuple], topology: Callable[[int, int], nn.Module] = None):
         super().__init__()
 
@@ -50,7 +50,7 @@ class MultiTaskSolver(Solver):
                                nn.Linear(ind // 4, outd)])
 
     def add_task(self, output_size):
-        self._tasks.append(self.topology(self.input_di, output_size))
+        self._tasks.append(self.topology(self.input_dim, output_size))
 
     @property
     def task(self):
@@ -74,7 +74,7 @@ class MultiTaskSolver(Solver):
 
     @task.setter
     def task(self, value):
-        if value > len(self._tasks) or 0 < value:
+        if value > len(self._tasks) or value < 0:
             raise ValueError()
         self._task = value
 

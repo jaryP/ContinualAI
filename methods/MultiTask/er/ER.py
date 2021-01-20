@@ -6,14 +6,12 @@ from typing import Union
 import torch
 
 import torch.nn.functional as F
-# from continual_ai.continual_learning_strategies.base import NaiveMethod, Container
-# from continual_ai.base import ExperimentConfig
-# from continual_ai.utils import Sampler
-# from continual_ai.cl_strategies import NaiveMethod, Container
-# from continual_ai.iterators import Sampler
-# from continual_ai.utils import ExperimentConfig
+from torch import nn
+from torch.utils.data import RandomSampler
+
 from methods import BaseMethod
 from settings.supervised import ClassificationTask
+from solvers.base import Solver
 
 
 class EmbeddingRegularization(BaseMethod):
@@ -29,6 +27,11 @@ class EmbeddingRegularization(BaseMethod):
     keywords = "Continual learning, Catastrophic forgetting, Embedding, Regularization, Trainable activation functions",
     }
     """
+
+    # def get_parameters(self, current_task, network: nn.Module, solver: Solver):
+    #     network.parameters()
+    #     solver.parameters()
+    #
 
     def __init__(self, task_memory_size: int, importance: float = 1, sample_size: int = None,
                  distance: str = 'cosine',
@@ -60,14 +63,6 @@ class EmbeddingRegularization(BaseMethod):
             raise ValueError("random_state can be None, Int or numpy RandomState object, an {} was give"
                              .format(type(random_state)))
 
-        # if logger is not None:
-        #     logger.info('ER parameters:')
-        #     logger.info(F'\tMemorized task size: {self.memorized_task_size}')
-        #     logger.info(F'\tSample size: {self.sample_size}')
-        #     logger.info(F'\tPenalty importance: {self.importance}')
-        #     logger.info(F'\tDistance: {self.distance}')
-        #     logger.info(F'\tNormalize: {self.normalize}')
-
         self.task_memory = []
 
     def on_task_ends(self, task: ClassificationTask, encoder: torch.nn.Module, *args, **kwargs):
@@ -75,15 +70,32 @@ class EmbeddingRegularization(BaseMethod):
         task.train()
 
         idxs = np.arange(len(task))
-        idxs = self.RandomState.choice(idxs, self.task_memory_size, replace=False)
+        idxs = self.RandomState.choice(idxs, self.sample_size, replace=False)
 
-        _, images, _ = task[idxs]
-
+        img, embs = [], []
         encoder.eval()
 
-        embs = encoder(images)
+        with torch.no_grad():
+            for i in idxs:
+                _, im, _ = task[i]
+                emb = encoder(im)
+                im = im.cpu()
+                emb = emb.cpu()
+                img.append(im)
+                embs.append(emb)
 
-        self.task_memory.append((task.index, images.detach(), embs.detach()))
+        img = torch.stack(img, 0)
+        embs = torch.stack(embs, 0)
+
+        # dataset = DataLoader(t, batch_size=64)
+        #
+        # _, images, _ = RandomSampler(task)[:self.sample_size]
+        # _, images, _ = task[idxs]
+        #
+        #
+        # embs = encoder(images)
+
+        self.task_memory.append((task.index, img, embs))
 
     def before_gradient_calculation(self, current_loss: torch.Tensor, encoder: torch.nn.Module, *args, **kwargs):
 
@@ -92,16 +104,16 @@ class EmbeddingRegularization(BaseMethod):
             to_back = []
             for _, images, embs in self.task_memory:
 
-                idxs = np.arange(len(images))
-                idxs = self.RandomState.choice(idxs, self.task_memory_size, replace=False)
-                idxs = torch.tensor(idxs)
+                # idxs = np.arange(len(images))
+                # idxs = self.RandomState.choice(idxs, self.sample_size, replace=False)
+                # idxs = torch.tensor(idxs)
 
-                images, embs = images[idxs], embs[idxs]
+                # images, embs = images[idxs], embs[idxs]
 
                 new_embedding = encoder(images)
 
-                if self.normalize:
-                    new_embedding = F.normalize(new_embedding, p=2, dim=1)
+                # if self.normalize:
+                #     new_embedding = F.normalize(new_embedding, p=2, dim=1)
 
                 if self.distance == 'euclidean':
                     dist = (embs - new_embedding).norm(p=None, dim=1)

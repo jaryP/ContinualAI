@@ -1,5 +1,6 @@
 from torch import nn
 
+
 def LeNet(input_size=None, output=None):
     """
 

@@ -85,7 +85,7 @@ class TransformationProblem(ContinualLearningSupervisedProblem, ABC):
     def __init__(self, dataset: SupervisedDataset, number_of_tasks: int, tasks_values: list = None):
         super().__init__()
 
-        self._base_transformer = deepcopy(dataset.transformer)
+        self._base_transformer = deepcopy(dataset._transformer)
         self._transformers = self.get_transformers(number_of_tasks, tasks_values)
         self.dataset = dataset
 
@@ -97,10 +97,10 @@ class TransformationProblem(ContinualLearningSupervisedProblem, ABC):
         return len(self._transformers)
 
     def __getitem__(self, i: int):
-        self.dataset.transformer = self._transformers[i]
+        self.dataset._transformer = self._transformers[i]
         return self.dataset
 
     def __iter__(self):
         for t in self._transformers:
-            self.dataset.transformer = t
+            self.dataset._transformer = t
             yield self.dataset

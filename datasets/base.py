@@ -1,10 +1,24 @@
 from abc import ABC, abstractmethod
 from os import makedirs
 from os.path import join, dirname, exists
-from typing import Callable, Union, Tuple
+from typing import Callable, Union, Tuple, List
 
 import numpy as np
 from datasets.utils import split_dataset
+
+
+class IterableDataset:
+    tensors: Tuple[Union[List, np.ndarray]]
+
+    def __init__(self, *tensors: Union[list, np.ndarray]) -> None:
+        assert all(len(tensors[0]) == len(tensor) for tensor in tensors)
+        self.tensors = tensors
+
+    def __getitem__(self, index):
+        return tuple(tensor[index] for tensor in self.tensors)
+
+    def __len__(self):
+        return len(self.tensors[0])
 
 
 class UnsupervisedDataset(object):
@@ -22,7 +36,10 @@ class UnsupervisedDataset(object):
     :param kwargs: Additional parameters.
     """
 
-    def __init__(self, x, train: list, test: list = None, dev: list = None, transformer: Callable = None, **kwargs):
+    def __init__(self, x, train: Union[list, np.ndarray], test: [list, np.ndarray] = None,
+                 dev: [list, np.ndarray] = None,
+                 transformer: Callable = None, **kwargs):
+
         """
         The init function, used to instantiate the class.
         :param x: The samples of the dataset.
@@ -33,6 +50,7 @@ class UnsupervisedDataset(object):
         In the case it is undefined, the identity function is used,
         :param kwargs: Additional parameters.
         """
+
         super().__init__(**kwargs)
 
         if dev is None:
@@ -43,20 +61,45 @@ class UnsupervisedDataset(object):
         assert len(x) == sum(map(len, [train, test, dev]))
 
         self._x = x
-        self._train_split, self._test_split, self._dev_split = train, test, dev
+        self._train_split, self._test_split, self._dev_split = np.asarray(train, dtype=int), \
+                                                               np.asarray(test, dtype=int), np.asarray(dev, dtype=int)
 
         self._split = 'train'
         self._current_split_idx = self._train_split
 
+        self._transformer = transformer if transformer is not None else lambda z: z
         self.transformer = transformer if transformer is not None else lambda z: z
 
-    def __getitem__(self, item) -> Tuple[Union[slice, tuple, int, list], np.ndarray]:
+    def apply_transformer(self, v: bool = True):
+        if v:
+            self._transformer = self.transformer
+        else:
+            self._transformer = lambda x: x
+
+    def __getitem__(self, item: Union[slice, int, list, np.ndarray]) -> Tuple[
+        Union[list, tuple, int, list], np.ndarray]:
         """
         Given an index, or a list of indexes (defined as list, tuple o slice), return the associated samples.
         :param item: The index, or more than one, used to fetch the samples in the dataset.
         :return: Return :param item: and the associated samples, modified by the transformer function.
         """
-        return item, self.transformer(self._x[self.current_indices[item]])
+        if isinstance(item, slice):
+            s = item.start if item.start is not None else 0
+            e = item.stop
+            step = item.step if item.step is not None else 1
+            i = list(range(s, e, step))
+        else:
+            i = item
+
+        # else:
+        #     print(item)
+        #     s = item.start if item.start is not None else 0
+        #     e = item.stop
+        #     step = item.step if item.step is not None else 1
+        #     i = list(range(s, e, step))
+        # print(type(self.current_indices))
+        # a = self.current_indices[item]
+        return i, self._transformer(self._x[self.current_indices[item]])
 
     def __len__(self):
         return len(self._current_split_idx)
@@ -82,7 +125,7 @@ class UnsupervisedDataset(object):
         """
         Return the samples of the current split.
         """
-        return self.transformer(self._x[self._current_split_idx])
+        return self._transformer(self._x[self.current_indices])
 
     @property
     def data(self) -> np.ndarray:
@@ -92,25 +135,41 @@ class UnsupervisedDataset(object):
         return self.x
 
     @property
-    def train_indices(self) -> list:
+    def train_indices(self) -> np.ndarray:
         """
         Return the train indexes.
         """
         return self._train_split
 
     @property
-    def test_indices(self) -> list:
+    def test_indices(self) -> np.ndarray:
         """
         Return the test indexes.
         """
         return self._test_split
 
     @property
-    def dev_indices(self) -> list:
+    def dev_indices(self) -> np.ndarray:
         """
         Return the dev indexes.
         """
         return self._dev_split
+
+    def _get_subset(self, idx):
+        x = [self._transformer(self._x[i]) for i in idx]
+        return idx, x
+
+    @property
+    def train_set(self):
+        return IterableDataset(self.train_indices, self._get_subset(self.train_indices))
+
+    @property
+    def dev_set(self):
+        return IterableDataset(self.dev_indices, self._get_subset(self.dev_indices))
+
+    @property
+    def test_set(self):
+        return IterableDataset(self.test_indices, self._get_subset(self.test_indices))
 
     def train(self) -> None:
         """
@@ -138,7 +197,7 @@ class UnsupervisedDataset(object):
         Set the current split to the whole dataset.
         """
         self._split = 'all'
-        self._current_split_idx = self.train_indices + self.test_indices + self.dev_indices
+        self._current_split_idx = np.concatenate((self.train_indices, self.test_indices, self.dev_indices))
 
     def preprocess(self, f: Callable) -> None:
         """
@@ -201,17 +260,18 @@ class SupervisedDataset(UnsupervisedDataset):
         assert len(self._x) == len(self._y)
 
         self.target_transformer = target_transformer if target_transformer is not None else lambda z: z
+        self._target_transformer = target_transformer if target_transformer is not None else lambda z: z
 
         self._labels = tuple(sorted(list(set(y))))
 
-    def __getitem__(self, item) -> Tuple[Union[slice, tuple, int, list], np.ndarray, np.ndarray]:
+    def __getitem__(self, item) -> Tuple[Union[list, tuple, int, list], np.ndarray, np.ndarray]:
         """
         Given an index, or a list of indexes (defined as list, tuple o slice), return the associated samples.
         :param item: The index, or more than one, used to fetch the samples in the dataset.
         :return: Return :param item: and the associated samples, x and y, modified by the transformer function.
         """
-        return item, self.transformer(self._x[self.current_indices[item]]), \
-               self.target_transformer(self._y[self.current_indices[item]])
+        i, x = super().__getitem__(item)
+        return i, x, self._target_transformer(self._y[self.current_indices[item]])
 
     @property
     def labels(self) -> tuple:
@@ -220,12 +280,34 @@ class SupervisedDataset(UnsupervisedDataset):
         """
         return self._labels
 
+    def _get_subset(self, idx):
+        _, x = super()._get_subset(idx)
+        y = [self._target_transformer(self._y[i]) for i in idx]
+
+        return x, y
+
+    @property
+    def train_set(self):
+        x, y = self._get_subset(self.train_indices)
+        return IterableDataset(self.train_indices, x, y)
+
+    @property
+    def dev_set(self):
+        x, y = self._get_subset(self.dev_indices)
+        return IterableDataset(self.dev_indices, x, y)
+
+    @property
+    def test_set(self):
+        x, y = self._get_subset(self.test_indices)
+        return IterableDataset(self.test_indices, x, y)
+
+
     @property
     def y(self):
         """
         :return: The labels of the current split.
         """
-        return self.target_transformer(self._y[self._current_split_idx])
+        return self._target_transformer(self._y[self.current_indices])
 
     @property
     def data(self):
@@ -234,6 +316,13 @@ class SupervisedDataset(UnsupervisedDataset):
         :return:
         """
         return self.x, self.y
+
+    def apply_transformer(self, v: bool = True):
+        super().apply_transformer(v)
+        if v:
+            self._target_transformer = self.target_transformer
+        else:
+            self._target_transformer = lambda x: x
 
     def preprocess_targets(self, f: Callable):
         """

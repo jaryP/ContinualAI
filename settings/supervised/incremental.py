@@ -30,6 +30,8 @@ class MultiTask(IncrementalProblem):
     def generate_tasks(self, dataset: SupervisedDataset, labels_per_task: int, shuffle_labels: bool = False,
                        random_state: Union[np.random.RandomState, int] = None) -> List[ClassificationTask]:
 
+        dataset.apply_transformer(False)
+
         labels = dataset.labels
         labels_sets = get_labels_set(labels, labels_per_task=labels_per_task, shuffle_labels=shuffle_labels,
                                      random_state=random_state)
@@ -50,9 +52,22 @@ class MultiTask(IncrementalProblem):
             _, x, dataset_y = dataset[indexes]
             task_y = labels_map[dataset_y]
 
-            train = list(filter(lambda z: z in indexes, dataset.train_indices))
-            test = list(filter(lambda z: z in indexes, dataset.test_indices))
-            dev = list(filter(lambda z: z in indexes, dataset.dev_indices))
+            train_i, test_i, dev_i = dataset.train_indices, dataset.test_indices, dataset.dev_indices
+            train, dev, test = [], [], []
+
+            for j, i in enumerate(indexes):
+                if i in train_i:
+                    train.append(j)
+                elif dev_i is not None and i in dev_i:
+                    dev.append(j)
+                elif test_i is not None and i in test_i:
+                    test.append(j)
+                else:
+                    assert False
+
+            # train = list(filter(lambda z: z in indexes, dataset.train_indices))
+            # test = list(filter(lambda z: z in indexes, dataset.test_indices))
+            # dev = list(filter(lambda z: z in indexes, dataset.dev_indices))
 
             task = ClassificationTask(x=x, dataset_y=dataset_y, task_y=task_y, train=train, test=test, dev=dev,
                                       task_index=len(tasks),
@@ -95,7 +110,7 @@ class SingleIncrementalTask(IncrementalProblem):
             dev = list(filter(lambda z: z in indexes, dataset.dev_indices))
 
             task = ClassificationTask(x=x, dataset_y=dataset_y, task_y=task_y, train=train, test=test, dev=dev,
-                                      transformer=dataset.transformer, target_transformer=dataset.target_transformer)
+                                      transformer=dataset._transformer, target_transformer=dataset.target_transformer)
 
             tasks.append(task)
 
