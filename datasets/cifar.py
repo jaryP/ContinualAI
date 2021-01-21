@@ -62,7 +62,9 @@ class CIFAR10(SupervisedDownloadableDataset):
         idx_test = list(range(len(idx_train), len(idx_train) + len(x_test)))
 
         y = np.concatenate((*y_train, *y_test), 0)
-        x = np.concatenate((x_train, x_test), 0).reshape((-1, 3, 32, 32))
+        x = np.concatenate((x_train, x_test), 0) .reshape((-1, 3, 32, 32))
+        # x = np.moveaxis(x, 1, -1)
+        x = np.transpose(x, (0, 2, 3, 1))
 
         return (x, y), (idx_train, idx_test, [])
 
@@ -117,6 +119,7 @@ class CIFAR100(CIFAR10):
 
         y = np.concatenate((*y_train, *y_test), 0)
         x = np.concatenate((x_train, x_test), 0).reshape((-1, 3, 32, 32))
+        x = np.transpose(x, (0, 2, 3, 1))
 
         return (x, y), (idx_train, idx_test, [])
 

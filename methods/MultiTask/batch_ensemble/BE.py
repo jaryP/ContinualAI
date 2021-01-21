@@ -25,6 +25,7 @@ class BatchEnsemble(BaseMethod):
 
         if isinstance(solver, MultiHeadsSolver):
             parameters.extend(solver.heads[current_task].parameters())
+
         return parameters
 
     def set_task(self, t):

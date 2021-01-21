@@ -69,6 +69,7 @@ class MNIST(SupervisedDownloadableDataset):
                         y.extend(self._load_label(data))
 
         x = np.asarray(x)
+        x = np.transpose(x, (0, 2, 3, 1))
         y = np.asarray(y)
 
         return (x, y), (train, test, dev)

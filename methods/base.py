@@ -37,6 +37,9 @@ class BaseMethod(ABC, torch.nn.Module):
             parameters.extend(solver.heads[current_task].parameters())
         return parameters
 
+    def before_evaluation(self, *args, **kwargs):
+        pass
+
     def on_epoch_starts(self, *args, **kwargs):
         pass
 
