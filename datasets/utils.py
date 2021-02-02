@@ -6,7 +6,7 @@ from typing import Union, Tuple
 import numpy as np
 
 
-def _get_balanced_index(y: list, test_split: float, dev_split: float = 0,
+def _get_balanced_index(y: Union[list,  np.ndarray], test_split: float, dev_split: float = 0,
                         random_state: np.random.RandomState = None) -> Tuple[list, list, list]:
     train = []
     test = []
@@ -36,7 +36,7 @@ def _get_balanced_index(y: list, test_split: float, dev_split: float = 0,
     return train, test, dev
 
 
-def _get_split_index(y: list, test_split: float, dev_split: float = 0,
+def _get_split_index(y: Union[list,  np.ndarray], test_split: float, dev_split: float = 0,
                      random_state: np.random.RandomState = None) -> Tuple[list, list, list]:
     index_list = np.arange(len(y))
 
@@ -57,10 +57,25 @@ def _get_split_index(y: list, test_split: float, dev_split: float = 0,
     return train, test, dev
 
 
-def split_dataset(y: list, test_split: float, dev_split: float = 0,
+def extract_dev(y: Union[list,  np.ndarray], dev_split: float = 0.1, random_state: Union[np.random.RandomState, int] = None):
+    if not isinstance(random_state, np.random.RandomState):
+        random_state = np.random.RandomState(random_state)
+
+    index_list = np.arange(len(y))
+
+    random_state.shuffle(index_list)
+
+    _dev_split = int(len(index_list) * dev_split)
+
+    train = index_list[_dev_split:]
+    dev = index_list[:_dev_split]
+
+    return train, dev
+
+
+def split_dataset(y: Union[list,  np.ndarray], test_split: float, dev_split: float = 0,
                   balance_labels: bool = True,
                   random_state: Union[np.random.RandomState, int] = None) -> Tuple[list, list, list]:
-
     if isinstance(random_state, int):
         random_state = np.random.RandomState(random_state)
 

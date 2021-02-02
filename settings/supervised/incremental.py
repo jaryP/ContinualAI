@@ -65,10 +65,6 @@ class MultiTask(IncrementalProblem):
                 else:
                     assert False
 
-            # train = list(filter(lambda z: z in indexes, dataset.train_indices))
-            # test = list(filter(lambda z: z in indexes, dataset.test_indices))
-            # dev = list(filter(lambda z: z in indexes, dataset.dev_indices))
-
             task = ClassificationTask(x=x, dataset_y=dataset_y, task_y=task_y, train=train, test=test, dev=dev,
                                       task_index=len(tasks),
                                       transformer=dataset.transformer, target_transformer=dataset.target_transformer)

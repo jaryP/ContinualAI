@@ -1,3 +1,4 @@
+import functools
 from collections import defaultdict
 
 import torch
@@ -7,12 +8,13 @@ from methods import BaseMethod
 from methods.MultiTask.super_mask_pruning.base.base import add_wrappers_to_model, mask_training, \
     remove_wrappers_from_model, get_masks_from_gradients, ForwardHook
 from methods.MultiTask.super_mask_pruning.base.layer import EnsembleMaskedWrapper
+from settings.supervised import ClassificationTask
 from solvers.multi_task import MultiHeadsSolver
-from solvers.base import Solver
 
 
 class SuperMask(BaseMethod):
-    def __init__(self, backbone: nn.Module, mask_parameters: dict = None, pruning_percentage=0.5, device='cpu'):
+    def __init__(self, mask_epochs=5, global_pruning=False,
+                 mask_parameters: dict = None, pruning_percentage=0.5, device='cpu'):
         super().__init__()
         if mask_parameters is None:
             mask_parameters = {'name': 'weights',
@@ -24,8 +26,9 @@ class SuperMask(BaseMethod):
         self.device = device
         self.pruning = pruning_percentage
         self.mask_parameters = mask_parameters
-
-        self.model = backbone
+        self.global_pruning = global_pruning
+        self.mask_epochs = mask_epochs
+        # self.model = backbone
 
         self.hooks = []
         self.tasks_masks = defaultdict(list)
@@ -50,21 +53,36 @@ class SuperMask(BaseMethod):
     #         if isinstance(m, BElayer):
     #             m.set_current_task(t)
 
-    def _get_mask_for_task(self, name: str, task: int):
-        masks = self.tasks_masks[name][:task]
-        if len(masks) == 0:
-            return None
-        _m = masks[0]
-        for i in range(1, len(masks)):
-            _m = torch.logical_or(_m, masks[i])
-        return _m.float()
-
-    def set_task(self, network: nn.Module, task_i:int):
+    def reset_hooks(self):
         for h in self.hooks:
             h.remove()
-        for name, module in network.named_modules():
+        self.hooks = []
+
+    def _get_mask_for_task(self, name: str, task: int, invert_masks: bool = False):
+        masks = self.tasks_masks[name][:task]
+
+        if len(masks) == 0:
+            return None
+        if len(masks) == 1:
+            _m =  masks[0]
+        else:
+            _m = functools.reduce(torch.logical_or, masks)
+
+        if invert_masks:
+            _m = torch.logical_not(_m)
+
+        # _m = masks[0]
+        # for i in range(1, len(masks)):
+        #     _m = torch.logical_or(_m, masks[i])
+        return _m.float()
+
+    def set_task(self, backbone: nn.Module, solver: MultiHeadsSolver, task: ClassificationTask, invert_masks=False,
+                 *args, **kwargs):
+        task_i = task.index
+        self.reset_hooks()
+        for name, module in backbone.named_modules():
             if name in self.tasks_masks:
-                _m = self._get_mask_for_task(name=name, task=task_i+1)
+                _m = self._get_mask_for_task(name=name, task=task_i + 1, invert_masks=invert_masks)
                 hook = ForwardHook(module=module, mask=_m)
                 self.hooks.append(hook)
 
@@ -87,53 +105,81 @@ class SuperMask(BaseMethod):
 
         return final_masks
 
-    def on_task_starts(self, network: nn.Module, solver: MultiHeadsSolver, dataset, task_i: int, *args, **kwargs):
-        add_wrappers_to_model(network, masks_params=self.mask_parameters)
+    def on_task_starts(self, backbone: nn.Module, solver: MultiHeadsSolver, task: ClassificationTask, *args, **kwargs):
+        # def backbone=backbone, solver=solver, task=t
+        # self.set_task(task_i=task_i, network=network, invert_masks=True)
+        task_i = task.index
+        dataset = task.get_iterable(64, shuffle=True)
+
+        self.reset_hooks()
+        
+        add_wrappers_to_model(backbone, masks_params=self.mask_parameters)
         solver.task = task_i
 
-        mask_training(model=network, epochs=10, dataset=dataset, solver=solver)
+        mask_training(model=backbone, epochs=self.mask_epochs, dataset=dataset, solver=solver, device=self.device)
         grads = defaultdict(list)
+        is_conv = set()
 
         for i, x, y in dataset:
             x, y = x.to(self.device), y.to(self.device)
 
-            pred = solver(network(x))
+            pred = solver(backbone(x))
 
             loss = torch.nn.functional.cross_entropy(pred, y, reduction='mean')
 
-            self.model.zero_grad()
+            backbone.zero_grad()
             loss.backward(retain_graph=True)
 
-            for name, module in self.model.named_modules():
+            for name, module in backbone.named_modules():
                 if isinstance(module, EnsembleMaskedWrapper):
                     g = torch.autograd.grad(loss, module.last_mask, retain_graph=True)[0]
-                    grads[name].append(torch.abs(g).cpu())
+                    grads[name].append(torch.abs(g).detach().cpu())
+                    # grads[name].append(torch.abs(g))
+                    if isinstance(module, nn.Conv2d):
+                        is_conv.add(name)
 
-        self.model.zero_grad()
+        backbone.zero_grad()
 
-        remove_wrappers_from_model(self.model)
+        remove_wrappers_from_model(backbone)
 
         f = lambda x: torch.mean(x, 0)
 
-        ens_grads = {name: f(torch.stack(gs, 0)).detach().cpu() for name, gs in grads.items()}
+        ens_grads = {}
+        for name, gs in grads.items():
+            g = f(torch.stack(gs, 0))
+            _masks = self._get_mask_for_task(task=task_i, name=name, invert_masks=True)
+            if _masks is not None:
+                _masks = _masks.unsqueeze(0)
+                # if name in is_conv:
+                _masks = _masks.unsqueeze(-1).unsqueeze(-1).cpu()
+                # m = m.unsqueeze(1)
+                # _masks = 1 - _masks.cpu()
+                g *= _masks
+            ens_grads[name] = g
+
+        # ens_grads = {name: f(torch.stack(gs, 0)).detach().cpu() for name, gs in grads.items()}
         # TODO: valutare se metter a zero i gradienti relativi ai task passati
         # _masks = self._get_mask_for_task(task_i)
 
         masks = get_masks_from_gradients(gradients=ens_grads, prune_percentage=self.pruning,
-                                         global_pruning=True, device=self.device)
+                                         global_pruning=self.global_pruning, device=self.device)
 
         for name, m in masks.items():
             self.tasks_masks[name].append(m)
 
-        self.set_task(network, task_i)
+        self.set_task(backbone=backbone, task=task, solver=solver)
 
-    def after_back_propagation(self, network: nn.Module, current_task: int, *args, **kwargs):
-        for name, module in network.named_modules():
+    def after_back_propagation(self, backbone: nn.Module, task: ClassificationTask, *args, **kwargs):
+        current_task = task.index
+        for name, module in backbone.named_modules():
             if hasattr(module, 'weight'):
                 if module.weight.grad is not None:
                     grad = module.weight.grad
-                    m = self._get_mask_for_task(name=name, task=current_task)
+                    m = self._get_mask_for_task(name=name, task=current_task, invert_masks=True)
                     if m is not None:
                         m = m.unsqueeze(1)
-                        m = 1 - m
+                        if isinstance(module, nn.Conv2d):
+                            m = m.unsqueeze(-1).unsqueeze(-1)
+                        # m = m.unsqueeze(1)
+                        # m = 1 - m
                         grad *= m

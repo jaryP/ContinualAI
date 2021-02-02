@@ -9,6 +9,12 @@ from typing import List, Union
 from .metrics.base import ClassificationMetric, ContinualLearningMetric, Metric
 
 
+def default_to_regular(d):
+    if isinstance(d, defaultdict):
+        d = {k: default_to_regular(v) for k, v in d.items()}
+    return d
+
+
 class Evaluator:
     def __init__(self, classification_metrics: Union[List[ClassificationMetric], ClassificationMetric] = None,
                  cl_metrics: Union[List[ContinualLearningMetric], ContinualLearningMetric] = None,
@@ -47,26 +53,31 @@ class Evaluator:
 
     @property
     def task_matrix(self) -> dict:
-        r = {}
-        for name, results in self._scores.items():
-            k = sorted(results.keys(), reverse=True)
-            _r = np.zeros((len(k), len(k)))
-            for i, ck in enumerate(k):
-                res = results[ck][ck]
-                res = res[1:]  # remove the first score, which is calculated before the training
-                mx = np.argmax(res)
-                _r[ck, ck] = res[mx]
-                for j in range(i + 1, len(k)):
-                    ek = k[j]
-                    res = results[ek][ck]
-                    _r[ck, ek] = res[mx]
-
-            r[name] = _r
-
-        return r
+        return self._r
+        # r = {}
+        # for name, results in self._scores.items():
+        #     k = sorted(results.keys(), reverse=False)
+        #     _r = np.zeros((len(k), len(k)))
+        #     for i in k:
+        #         for j in range(i, len(k)):
+        #             res = results[i][j]
+        #             # res = res[1:]  # remove the first score, which is calculated before the training
+        #             # mx = np.argmax(res)
+        #             # mx = len(res) - 1
+        #             # print(i, j, k)
+        #             _r[i, j] = res[-1]
+        #             # for j in range(i + 1, len(k)):
+        #             #     ek = k[j]
+        #             #     res = results[ek][ck]
+        #             #     mx = len(res) - 1
+        #             # _r[ck, ek] = res[-1]
+        #
+        #     r[name] = _r
+        #
+        # return r
 
     def classification_results(self) -> dict:
-        return self._scores
+        return default_to_regular(self._scores)
 
     def cl_results(self) -> dict:
         res = {}
@@ -98,14 +109,36 @@ class Evaluator:
 
         if current_task not in self._labels:
             self._labels[evaluated_task] = set(y_true)
+        mx = max(current_task, evaluated_task) + 1
 
+        scores = {}
         for name, m in self._classification_metrics:
 
             _m = m(y_true, y_pred, evaluator=self)
+
             _s = self._scores.get(name, defaultdict(lambda: defaultdict(list)))
 
             _s[evaluated_task][current_task].append(_m)
             self._scores[name] = _s
+            scores[name] = _m
+
+            r = self._r.get(name, None)
+
+            if r is None:
+                r = np.zeros((mx, mx), dtype=float)
+            elif r.shape[0] < mx:
+                com = np.zeros((mx, mx), dtype=r.dtype)
+                com[:r.shape[0], :r.shape[1]] = r
+                r = com
+
+            r[current_task, evaluated_task] = _m
+            self._r[name] = r
+
+        return scores
+
+    def final_score(self, y_true: Union[list, np.ndarray], y_pred: Union[list, np.ndarray],
+                 current_task: int, evaluated_task: int):
+        pass
 
     def add_cl_metric(self, metric: ContinualLearningMetric):
         self._cl_metrics.append((metric.__class__.__name__, metric))

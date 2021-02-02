@@ -4,7 +4,9 @@ from os.path import join, dirname, exists
 from typing import Callable, Union, Tuple, List
 
 import numpy as np
-from datasets.utils import split_dataset
+from torch.utils.data import DataLoader
+
+from datasets.utils import split_dataset, extract_dev
 
 
 class IterableDataset:
@@ -103,6 +105,9 @@ class UnsupervisedDataset(object):
 
     def __len__(self):
         return len(self._current_split_idx)
+
+    def get_iterable(self, batch_size, shuffle=True, sampler=None):
+        return DataLoader(self, batch_size=batch_size, shuffle=shuffle, sampler=sampler)
 
     @property
     def current_split(self):
@@ -301,7 +306,6 @@ class SupervisedDataset(UnsupervisedDataset):
         x, y = self._get_subset(self.test_indices)
         return IterableDataset(self.test_indices, x, y)
 
-
     @property
     def y(self):
         """
@@ -350,6 +354,21 @@ class SupervisedDataset(UnsupervisedDataset):
         self._train_split, self._test_split, self._dev_split = \
             split_dataset(self._y, balance_labels=True,
                           test_split=test_split, dev_split=dev_split, random_state=random_state)
+
+    def create_dev_split(self, dev_split: float = 0.1,
+                         random_state: Union[np.random.RandomState, int] = None):
+        """
+        When called, extract the dev split from the training set
+        Modify the dataset in-place.
+        :param dev_split: The percentage of the data to be used in the dev set. Must be 0 <= dev_split <= 1.
+        :param random_state: The random state used to shuffle the dataset.
+        If it isn't a numpy RandomState object, the object is retrieved by doing
+        np.random.RandomState(:param random_state:).
+        """
+        assert dev_split >= 0
+
+        self._train_split, self._dev_split = extract_dev(y=self.train_indices, dev_split=dev_split,
+                                                          random_state=random_state)
 
 
 class DownloadableDataset(ABC):

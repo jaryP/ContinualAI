@@ -2,6 +2,7 @@ import numpy as np
 import torch
 from torch import nn
 
+from backbone_networks.alexnet import AlexNet
 from backbone_networks.vgg import VGG
 from methods.MultiTask.super_mask_pruning.base.layer import EnsembleMaskedWrapper
 from solvers.multi_task import MultiHeadsSolver
@@ -9,6 +10,10 @@ from solvers.multi_task import MultiHeadsSolver
 
 class ForwardHook:
     def __init__(self, module: nn.Module, mask: torch.Tensor):
+        mask = mask.unsqueeze(0)
+        if isinstance(module, nn.Conv2d):
+            mask = mask.unsqueeze(-1).unsqueeze(-1)
+
         self.mask = mask
         self.hook = module.register_forward_hook(self.forward_hook)
 
@@ -19,7 +24,7 @@ class ForwardHook:
         self.hook.remove()
 
 
-def add_wrappers_to_model(module, masks_params=None):
+def add_wrappers_to_model(model, masks_params=None):
     where = 'output'
 
     def apply_mask_sequential(s, skip_last):
@@ -32,11 +37,12 @@ def add_wrappers_to_model(module, masks_params=None):
             #     s[i] = ResNetBlockWrapper(l, masks_params=masks_params,
             #                               ensemble=ensemble, batch_ensemble=batch_ensemble)
 
-    if isinstance(module, nn.Sequential):
-        apply_mask_sequential(module, skip_last=True)
-    elif isinstance(module, VGG):
-        apply_mask_sequential(module.features, skip_last=False)
-        apply_mask_sequential(module.classifier, skip_last=True)
+    if isinstance(model, nn.Sequential):
+        apply_mask_sequential(model, skip_last=True)
+    elif isinstance(model, (VGG, AlexNet)):
+        apply_mask_sequential(model.features, skip_last=False)
+
+        # apply_mask_sequential(module.classifier, skip_last=True)
     # elif isinstance(module, ResNet):
     #     module.conv1 = EnsembleMaskedWrapper(module.conv1, masks_params=masks_params, where='output',
     #                            ensemble=ensemble, batch_ensemble=batch_ensemble)
@@ -63,9 +69,8 @@ def remove_wrappers_from_model(model):
 
     if isinstance(model, nn.Sequential):
         remove_masked_layer(model)
-    elif isinstance(model, VGG):
+    elif isinstance(model, (VGG, AlexNet)):
         remove_masked_layer(model.features)
-        remove_masked_layer(model.classifier)
     # elif isinstance(model, ResNet):
     #     model.conv1 = model.conv1.layer
     #     if isinstance(model.fc, (EnsembleMaskedWrapper, BatchEnsembleMaskedWrapper)):
@@ -89,7 +94,7 @@ def get_masks_from_gradients(gradients, prune_percentage, global_pruning, device
         masks = {name: torch.ge(gs / grads_sum, threshold).float().to(device)
                  for name, gs in gradients.items()}
     else:
-        masks = {name: torch.ge(gs, torch.quantile(gs, prune_percentage)).float()
+        masks = {name: torch.ge(gs, torch.quantile(gs, prune_percentage)).float().to(device)
                  for name, gs in gradients.items()}
 
     for name, mask in masks.items():
@@ -112,10 +117,12 @@ def mask_training(model, solver, epochs, dataset, device='cpu', parameters=None)
 
     optim = torch.optim.Adam(parameters, lr=0.001)
 
+    model.train()
+    solver.train()
+
     for e in bar:
         losses = []
-        model.train()
-
+        print(e)
         for _, x, y in dataset:
             x, y = x.to(device), y.to(device)
             pred = solver(model(x))

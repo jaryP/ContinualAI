@@ -1,6 +1,7 @@
 from torch import nn
 
 from methods import BaseMethod
+from settings.supervised import ClassificationTask
 from solvers.multi_task import MultiHeadsSolver
 from .base import layer_to_masked, BElayer
 from solvers.base import Solver
@@ -12,13 +13,15 @@ class BatchEnsemble(BaseMethod):
         layer_to_masked(backbone)
         self.model = backbone
 
-    def get_parameters(self, current_task: int, network: nn.Module, solver: Solver):
+    def get_parameters(self, task: ClassificationTask, backbone: nn.Module, solver: Solver):
         parameters = []
+        current_task = task.index
 
         if current_task == 0:
-            parameters.extend(network.parameters())
+            print([name for name, p in backbone.named_parameters()])
+            parameters.extend(backbone.parameters())
         else:
-            for n, m in network.named_modules():
+            for n, m in backbone.named_modules():
                 if isinstance(m, BElayer):
                     parameters.append(m.tasks_alpha[current_task])
                     parameters.append(m.tasks_gamma[current_task])
@@ -28,13 +31,15 @@ class BatchEnsemble(BaseMethod):
 
         return parameters
 
-    def set_task(self, t):
-        for n, m in self.model.named_modules():
+    def set_task(self, backbone: nn.Module, task: ClassificationTask, **kwargs):
+        task_i = task.index
+        for n, m in backbone.named_modules():
             if isinstance(m, BElayer):
-                m.set_current_task(t)
+                m.set_current_task(task_i)
 
-    def on_task_starts(self, network: nn.Module, task_i: int, *args, **kwargs):
-        for n, m in self.model.named_modules():
+    def on_task_starts(self, backbone: nn.Module, task: ClassificationTask, *args, **kwargs):
+        task_i = task.index
+        for n, m in backbone.named_modules():
             if isinstance(m, BElayer):
                 m.add_task()
                 m.set_current_task(task_i)

@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 
+from backbone_networks.alexnet import AlexNet
 from backbone_networks.resnet import ResNet
 from backbone_networks.vgg import VGG
 
@@ -135,21 +136,21 @@ class BElayer(nn.Module):
 #         return 'Batch ensemble. Original layer: {} '.format(self.layer.__repr__())
 
 
-def layer_to_masked(module, ensemble=1):
+def layer_to_masked(model, ensemble=1):
     def apply_mask_sequential(s):
         for i, l in enumerate(s):
             if isinstance(l, (nn.Linear, nn.Conv2d)):
                 s[i] = BElayer(l)
 
-    if isinstance(module, nn.Sequential):
-        apply_mask_sequential(module)
-    elif isinstance(module, VGG):
-        apply_mask_sequential(module.features)
+    if isinstance(model, nn.Sequential):
+        apply_mask_sequential(model)
+    elif isinstance(model, (VGG, AlexNet)):
+        apply_mask_sequential(model.features)
         # apply_mask_sequential(module.classifier)
-    elif isinstance(module, ResNet):
-        module.conv1 = BElayer(module.conv1)
+    elif isinstance(model, ResNet):
+        model.conv1 = BElayer(model.conv1)
         # module.fc = BELinear(module.fc, ensemble=ensemble)
         for i in range(1, 4):
-            apply_mask_sequential(getattr(module, 'layer{}'.format(i)))
+            apply_mask_sequential(getattr(model, 'layer{}'.format(i)))
     else:
         assert False
