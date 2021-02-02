@@ -33,26 +33,6 @@ class SuperMask(BaseMethod):
         self.hooks = []
         self.tasks_masks = defaultdict(list)
 
-    # def get_parameters(self, current_task: int, network: nn.Module, solver: Solver):
-    #     parameters = []
-    #
-    #     if current_task == 0:
-    #         parameters.extend(network.parameters())
-    #     else:
-    #         for n, m in network.named_modules():
-    #             if isinstance(m, BElayer):
-    #                 parameters.append(m.tasks_alpha[current_task])
-    #                 parameters.append(m.tasks_gamma[current_task])
-    #
-    #     if isinstance(solver, MultiHeadsSolver):
-    #         parameters.extend(solver.heads[current_task].parameters())
-    #     return parameters
-    #
-    # def set_task(self, t):
-    #     for n, m in self.model.named_modules():
-    #         if isinstance(m, BElayer):
-    #             m.set_current_task(t)
-
     def reset_hooks(self):
         for h in self.hooks:
             h.remove()
@@ -64,16 +44,13 @@ class SuperMask(BaseMethod):
         if len(masks) == 0:
             return None
         if len(masks) == 1:
-            _m =  masks[0]
+            _m = masks[0]
         else:
             _m = functools.reduce(torch.logical_or, masks)
 
         if invert_masks:
             _m = torch.logical_not(_m)
 
-        # _m = masks[0]
-        # for i in range(1, len(masks)):
-        #     _m = torch.logical_or(_m, masks[i])
         return _m.float()
 
     def set_task(self, backbone: nn.Module, solver: MultiHeadsSolver, task: ClassificationTask, invert_masks=False,
@@ -145,6 +122,8 @@ class SuperMask(BaseMethod):
         f = lambda x: torch.mean(x, 0)
 
         ens_grads = {}
+        old_grads = {}
+
         for name, gs in grads.items():
             g = f(torch.stack(gs, 0))
             _masks = self._get_mask_for_task(task=task_i, name=name, invert_masks=True)
@@ -154,7 +133,8 @@ class SuperMask(BaseMethod):
                 _masks = _masks.unsqueeze(-1).unsqueeze(-1).cpu()
                 # m = m.unsqueeze(1)
                 # _masks = 1 - _masks.cpu()
-                g *= _masks
+                old_grads[name] = _masks
+                # g *= _masks
             ens_grads[name] = g
 
         # ens_grads = {name: f(torch.stack(gs, 0)).detach().cpu() for name, gs in grads.items()}
@@ -162,7 +142,8 @@ class SuperMask(BaseMethod):
         # _masks = self._get_mask_for_task(task_i)
 
         masks = get_masks_from_gradients(gradients=ens_grads, prune_percentage=self.pruning,
-                                         global_pruning=self.global_pruning, device=self.device)
+                                         global_pruning=self.global_pruning, past_masks=old_grads,
+                                         device=self.device)
 
         for name, m in masks.items():
             self.tasks_masks[name].append(m)

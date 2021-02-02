@@ -83,9 +83,26 @@ def remove_wrappers_from_model(model):
     return model
 
 
-def get_masks_from_gradients(gradients, prune_percentage, global_pruning, device='cpu'):
+def get_masks_from_gradients(gradients, prune_percentage, global_pruning, past_masks=None, device='cpu'):
+
+    if past_masks is None:
+        past_masks = {}
+
     if global_pruning:
-        stacked_grads = np.concatenate([gs.view(-1).numpy() for name, gs in gradients.items()])
+        grads = []
+        for name, g in gradients.items():
+            if name in past_masks:
+                g = g.view(-1).numpy()
+                m = past_masks[name]
+                gradients[name] *= m
+                m = m.view(-1).numpy()
+                g = g[m.astype(np.bool)]
+                grads.append(g)
+            else:
+                grads.append(g.view(-1).numpy())
+
+        # stacked_grads = np.concatenate([gs.view(-1).numpy() for name, gs in gradients.items()])
+        stacked_grads = np.concatenate(grads)
         grads_sum = np.sum(stacked_grads)
         stacked_grads = stacked_grads / grads_sum
 
@@ -94,8 +111,21 @@ def get_masks_from_gradients(gradients, prune_percentage, global_pruning, device
         masks = {name: torch.ge(gs / grads_sum, threshold).float().to(device)
                  for name, gs in gradients.items()}
     else:
-        masks = {name: torch.ge(gs, torch.quantile(gs, prune_percentage)).float().to(device)
-                 for name, gs in gradients.items()}
+        masks = {}
+        for name, gs in gradients.items():
+            if name not in past_masks:
+                thres = torch.quantile(gs, prune_percentage)
+            else:
+                masked = torch.masked_select(gs, past_masks[name].bool())
+                if len(masked) == 0:
+                    thres = 0
+                else:
+                    thres = torch.quantile(masked, prune_percentage)
+
+            masks[name] = torch.ge(gs, thres).float().to(device)
+
+        # masks = {name: torch.ge(gs, torch.quantile(gs, prune_percentage)).float().to(device)
+        #          for name, gs in gradients.items()}
 
     for name, mask in masks.items():
         mask = mask.squeeze()
@@ -122,7 +152,6 @@ def mask_training(model, solver, epochs, dataset, device='cpu', parameters=None)
 
     for e in bar:
         losses = []
-        print(e)
         for _, x, y in dataset:
             x, y = x.to(device), y.to(device)
             pred = solver(model(x))
