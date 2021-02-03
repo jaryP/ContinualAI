@@ -64,7 +64,7 @@ class BaseMethod(ABC, torch.nn.Module):
     def after_optimization_step(self, backbone, solver, task, *args, **kwargs):
         pass
 
-    def after_back_propagation(self, backbone, solver, task, *args, **kwargs):
+    def after_gradient_calculation(self, backbone, solver, task, *args, **kwargs):
         pass
 
     def before_gradient_calculation(self, backbone, solver, task,  *args, **kwargs):
@@ -124,7 +124,7 @@ def standard_trainer(method: BaseMethod, tasks: ClassificationTask, model: torch
                 optimizer.zero_grad()
                 method.before_gradient_calculation(None)
                 loss.backward()
-                method.after_back_propagation(encoder=backbone, solver=solver)
+                method.after_gradient_calculation(encoder=backbone, solver=solver)
                 optimizer.step()
 
                 method.after_optimization_step(None)

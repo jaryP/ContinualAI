@@ -19,7 +19,6 @@ class PiggyBack(BaseMethod):
         self.hooks = []
         self.task_masks = {}
 
-
     def get_parameters(self, task: ClassificationTask, backbone: nn.Module, solver: Solver):
         parameters = []
         current_task = task.index

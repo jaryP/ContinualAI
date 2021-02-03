@@ -150,7 +150,7 @@ class SuperMask(BaseMethod):
 
         self.set_task(backbone=backbone, task=task, solver=solver)
 
-    def after_back_propagation(self, backbone: nn.Module, task: ClassificationTask, *args, **kwargs):
+    def after_gradient_calculation(self, backbone: nn.Module, task: ClassificationTask, *args, **kwargs):
         current_task = task.index
         for name, module in backbone.named_modules():
             if hasattr(module, 'weight'):

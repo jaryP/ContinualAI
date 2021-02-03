@@ -66,7 +66,7 @@ class GradientEpisodicMemory(BaseMethod):
 
         self.task_memory.append((task.index, images.detach(), labels))
 
-    def after_back_propagation(self, encoder: torch.nn.Module, solver, *args, **kwargs):
+    def after_gradient_calculation(self, encoder: torch.nn.Module, solver, *args, **kwargs):
 
         if len(self.task_memory) > 0:
             named_parameters = dict(itertools.chain(encoder.named_parameters(),))

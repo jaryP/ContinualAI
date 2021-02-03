@@ -65,7 +65,7 @@ class EmbeddingRegularization(BaseMethod):
 
         self.task_memory = []
 
-    def on_task_ends(self, task: ClassificationTask, encoder: torch.nn.Module, *args, **kwargs):
+    def on_task_ends(self, task: ClassificationTask, backbone: torch.nn.Module, *args, **kwargs):
 
         task.train()
 
@@ -73,12 +73,12 @@ class EmbeddingRegularization(BaseMethod):
         idxs = self.RandomState.choice(idxs, self.sample_size, replace=False)
 
         img, embs = [], []
-        encoder.eval()
+        backbone.eval()
 
         with torch.no_grad():
             for i in idxs:
                 _, im, _ = task[i]
-                emb = encoder(im)
+                emb = backbone(im)
                 im = im.cpu()
                 emb = emb.cpu()
                 img.append(im)
@@ -97,7 +97,7 @@ class EmbeddingRegularization(BaseMethod):
 
         self.task_memory.append((task.index, img, embs))
 
-    def before_gradient_calculation(self, current_loss: torch.Tensor, encoder: torch.nn.Module, *args, **kwargs):
+    def before_gradient_calculation(self, loss: torch.Tensor, backbone: torch.nn.Module, *args, **kwargs):
 
         if len(self.task_memory) > 0:
 
@@ -110,7 +110,7 @@ class EmbeddingRegularization(BaseMethod):
 
                 # images, embs = images[idxs], embs[idxs]
 
-                new_embedding = encoder(images)
+                new_embedding = backbone(images)
 
                 # if self.normalize:
                 #     new_embedding = F.normalize(new_embedding, p=2, dim=1)
@@ -127,4 +127,4 @@ class EmbeddingRegularization(BaseMethod):
 
             to_back = torch.cat(to_back)
 
-            current_loss += torch.mul(to_back.mean(), self.importance)
+            loss += torch.mul(to_back.mean(), self.importance)

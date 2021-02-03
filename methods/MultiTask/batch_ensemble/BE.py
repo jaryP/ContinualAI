@@ -8,6 +8,16 @@ from solvers.base import Solver
 
 
 class BatchEnsemble(BaseMethod):
+    """
+    @misc{wen2020batchensemble,
+    title={BatchEnsemble: An Alternative Approach to Efficient Ensemble and Lifelong Learning},
+    author={Yeming Wen and Dustin Tran and Jimmy Ba},
+    year={2020},
+    eprint={2002.06715},
+    archivePrefix={arXiv},
+    primaryClass={cs.LG}
+    }
+    """
     def __init__(self, backbone: nn.Module):
         super().__init__()
         layer_to_masked(backbone)
