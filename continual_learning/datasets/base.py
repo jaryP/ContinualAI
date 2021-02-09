@@ -1,9 +1,11 @@
+import os
 from abc import ABC, abstractmethod
 from os import makedirs
 from os.path import join, dirname, exists
 from typing import Callable, Union, Tuple, List
 
 import numpy as np
+from PIL import Image
 from torch.utils.data import DataLoader
 
 from .utils import extract_dev, split_dataset
@@ -24,23 +26,24 @@ class IterableDataset:
 
 
 class UnsupervisedDataset(object):
-    """
-    This class contains all the functions to operate with an unsupervised dataset
-    (a dataset which does not contains labels).
-    It allows to use transformation (pytorch style) and to have all the dataset split (train, test, split) in one place.
-    it also possible to split the dataset using custom percentages of the whole dataset.
-    :param x: The samples of the dataset.
-    :param train: The list of the training set indexes.
-    :param test: The list of the testing set indexes, if present.
-    :param dev: The list of the dev set indexes, if present.
-    :param transformer: A callable function f(x), which takes as input a sample and transforms it.
-    In the case it is undefined, the identity function is used,
-    :param kwargs: Additional parameters.
-    """
+    # """
+    # This class contains all the functions to operate with an unsupervised dataset
+    # (a dataset which does not contains labels).
+    # It allows to use transformation (pytorch style) and to have all the dataset split (train, test, split) in one place.
+    # it also possible to split the dataset using custom percentages of the whole dataset.
+    # :param x: The samples of the dataset.
+    # :param train: The list of the training set indexes.
+    # :param test: The list of the testing set indexes, if present.
+    # :param dev: The list of the dev set indexes, if present.
+    # :param transformer: A callable function f(x), which takes as input a sample and transforms it.
+    # In the case it is undefined, the identity function is used,
+    # :param kwargs: Additional parameters.
+    # """
 
     def __init__(self, x, train: Union[list, np.ndarray], test: [list, np.ndarray] = None,
                  dev: [list, np.ndarray] = None,
-                 transformer: Callable = None, **kwargs):
+                 transformer: Callable = None,
+                 is_path_dataset: bool = False, images_path: str = '', **kwargs):
 
         """
         The init function, used to instantiate the class.
@@ -48,8 +51,9 @@ class UnsupervisedDataset(object):
         :param train: The list of the training set indexes.
         :param test: The list of the testing set indexes, if present.
         :param dev: The list of the dev set indexes, if present.
-        :param transformer: A callable function f(x), which takes as input a sample and transforms it.
-        In the case it is undefined, the identity function is used,
+        :param transformer: A callable function f(x), which takes as input a sample and transforms it. In the case it is undefined, the identity function is used,
+        :param is_path_dataset: If the dataset contains paths instead of images.
+        :param images_path: the path from the root of the dataset, in which the images are stored.
         :param kwargs: Additional parameters.
         """
 
@@ -62,9 +66,13 @@ class UnsupervisedDataset(object):
 
         assert len(x) == sum(map(len, [train, test, dev]))
 
+        self.is_path_dataset = is_path_dataset
+        self.images_path = images_path
+
         self._x = x
         self._train_split, self._test_split, self._dev_split = np.asarray(train, dtype=int), \
-                                                               np.asarray(test, dtype=int), np.asarray(dev, dtype=int)
+                                                               np.asarray(test, dtype=int), \
+                                                               np.asarray(dev, dtype=int)
 
         self._split = 'train'
         self._current_split_idx = self._train_split
@@ -85,23 +93,29 @@ class UnsupervisedDataset(object):
         :param item: The index, or more than one, used to fetch the samples in the dataset.
         :return: Return :param item: and the associated samples, modified by the transformer function.
         """
-        if isinstance(item, slice):
-            s = item.start if item.start is not None else 0
-            e = item.stop
-            step = item.step if item.step is not None else 1
-            i = list(range(s, e, step))
+        if self.is_path_dataset:
+            img = Image.open(os.path.join(self.images_path, self._x[item]))
+            img = img.convert('RGB')
+            img = np.asarray(img)
+            return item, self._transformer(img)
         else:
-            i = item
+            if isinstance(item, slice):
+                s = item.start if item.start is not None else 0
+                e = item.stop
+                step = item.step if item.step is not None else 1
+                i = list(range(s, e, step))
+            else:
+                i = item
 
-        # else:
-        #     print(item)
-        #     s = item.start if item.start is not None else 0
-        #     e = item.stop
-        #     step = item.step if item.step is not None else 1
-        #     i = list(range(s, e, step))
-        # print(type(self.current_indices))
-        # a = self.current_indices[item]
-        return i, self._transformer(self._x[self.current_indices[item]])
+            # else:
+            #     print(item)
+            #     s = item.start if item.start is not None else 0
+            #     e = item.stop
+            #     step = item.step if item.step is not None else 1
+            #     i = list(range(s, e, step))
+            # print(type(self.current_indices))
+            # a = self.current_indices[item]
+            return i, self._transformer(self._x[self.current_indices[item]])
 
     def __len__(self):
         return len(self._current_split_idx)
@@ -368,7 +382,7 @@ class SupervisedDataset(UnsupervisedDataset):
         assert dev_split >= 0
 
         self._train_split, self._dev_split = extract_dev(y=self.train_indices, dev_split=dev_split,
-                                                          random_state=random_state)
+                                                         random_state=random_state)
 
 
 class DownloadableDataset(ABC):
@@ -450,10 +464,13 @@ class UnsupervisedDownloadableDataset(DownloadableDataset, UnsupervisedDataset, 
 class SupervisedDownloadableDataset(DownloadableDataset, SupervisedDataset, ABC):
     def __init__(self, name, download_if_missing: bool = True, data_folder: str = None,
                  transformer: Callable = None, target_transformer: Callable = None, **kwargs):
-        super().__init__(name=name, transformer=transformer,
-                         download_if_missing=download_if_missing, data_folder=data_folder)
 
+        super().__init__(name=name, transformer=transformer,
+                         download_if_missing=download_if_missing, data_folder=data_folder, **kwargs)
         (x, y), (train, test, dev) = self.load_dataset()
+
+        if kwargs.get('is_path_dataset', False):
+            kwargs['images_path'] = os.path.join(self.data_folder, kwargs['images_path'])
 
         super(DownloadableDataset, self).__init__(x=x, y=y, train=train, test=test, dev=dev,
                                                   transformer=transformer, target_transformer=target_transformer,

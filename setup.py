@@ -40,6 +40,7 @@ setuptools.setup(
         'torch',
         'torchvision',
         'numpy',
-        'quadprog'
+        'quadprog',
+        'scipy'
     ]
 )

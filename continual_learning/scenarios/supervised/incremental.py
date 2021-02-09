@@ -1,3 +1,4 @@
+import os
 from typing import List, Union
 
 import numpy as np
@@ -45,11 +46,19 @@ class MultiTask(IncrementalProblem):
         dataset.all()
         y = dataset.y
 
+        is_path_dataset = dataset.is_path_dataset
+        images_path = dataset.images_path
+
         tasks = []
         for task_labels in labels_sets:
             indexes = np.where(np.in1d(y, task_labels))[0]
+            if is_path_dataset:
+                x, dataset_y = [os.path.join(dataset.images_path, dataset._x[item]) for item in indexes], \
+                               dataset._target_transformer(dataset._y[dataset.current_indices[indexes]])
+                x = np.array(x)
+            else:
+                _, x, dataset_y = dataset[indexes]
 
-            _, x, dataset_y = dataset[indexes]
             task_y = labels_map[dataset_y]
 
             train_i, test_i, dev_i = dataset.train_indices, dataset.test_indices, dataset.dev_indices

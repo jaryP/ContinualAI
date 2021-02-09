@@ -29,29 +29,17 @@ class VGG(nn.Module):
     def __init__(
             self,
             features: nn.Module,
-            num_classes: int = 1000,
             init_weights: bool = True
     ) -> None:
         super(VGG, self).__init__()
         self.features = features
         self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
-        # self.classifier = nn.Sequential(
-        #     nn.Linear(512 * 7 * 7, 4096),
-        #     nn.ReLU(True),
-        #     nn.Dropout(),
-        #     nn.Linear(4096, 4096),
-        #     nn.ReLU(True),
-        #     nn.Dropout(),
-        #     nn.Linear(4096, num_classes),
-        # )
-        # if init_weights:
-        #     self._initialize_weights()
+        if init_weights:
+            self._initialize_weights()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.features(x)
         x = self.avgpool(x)
-        # x = torch.flatten(x, 1)
-        # x = self.classifier(x)
         return x
 
     def _initialize_weights(self) -> None:
@@ -100,6 +88,8 @@ def _vgg(arch: str, cfg: str, batch_norm: bool, pretrained: bool, progress: bool
     if pretrained:
         state_dict = load_state_dict_from_url(model_urls[arch],
                                               progress=progress)
+        state_dict = {k: w for k, w in dict(state_dict).items() if k in model.state_dict().keys()}
+
         model.load_state_dict(state_dict)
     return model
 

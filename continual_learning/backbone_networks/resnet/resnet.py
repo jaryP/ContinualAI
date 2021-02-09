@@ -32,8 +32,6 @@ author, Yerlan Idelbayev.
 
 
 def _weights_init(m):
-    # classname = m.__class__.__name__
-    #print(classname)
     if isinstance(m, nn.Linear) or isinstance(m, nn.Conv2d):
         init.kaiming_normal_(m.weight)
 
@@ -84,7 +82,7 @@ class BasicBlock(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, block, num_blocks, num_classes=10):
+    def __init__(self, block, num_blocks):
         super(ResNet, self).__init__()
         self.in_planes = 16
 
@@ -93,7 +91,6 @@ class ResNet(nn.Module):
         self.layer1 = self._make_layer(block, 16, num_blocks[0], stride=1)
         self.layer2 = self._make_layer(block, 32, num_blocks[1], stride=2)
         self.layer3 = self._make_layer(block, 64, num_blocks[2], stride=2)
-        # self.fc = nn.Linear(64, num_classes)
 
         self.apply(_weights_init)
 
@@ -112,30 +109,28 @@ class ResNet(nn.Module):
         out = self.layer2(out)
         out = self.layer3(out)
         out = F.avg_pool2d(out, out.size()[3])
-        # out = out.view(out.size(0), -1)
-        # out = self.fc(out)
         return out
 
 
-def resnet20(num_classes):
-    return ResNet(BasicBlock, [3, 3, 3], num_classes=num_classes)
+def resnet20():
+    return ResNet(BasicBlock, [3, 3, 3])
 
 
-def resnet32(num_classes):
-    return ResNet(BasicBlock, [5, 5, 5], num_classes=num_classes)
+def resnet32():
+    return ResNet(BasicBlock, [5, 5, 5])
 
 
-def resnet44(num_classes):
-    return ResNet(BasicBlock, [7, 7, 7], num_classes=num_classes)
+def resnet44():
+    return ResNet(BasicBlock, [7, 7, 7])
 
 
-def resnet56(num_classes):
-    return ResNet(BasicBlock, [9, 9, 9], num_classes=num_classes)
+def resnet56():
+    return ResNet(BasicBlock, [9, 9, 9])
 
 
-def resnet110(num_classes):
-    return ResNet(BasicBlock, [18, 18, 18], num_classes=num_classes)
+def resnet110():
+    return ResNet(BasicBlock, [18, 18, 18])
 
 
-def resnet1202(num_classes):
-    return ResNet(BasicBlock, [200, 200, 200], num_classes=num_classes)
+def resnet1202():
+    return ResNet(BasicBlock, [200, 200, 200])
