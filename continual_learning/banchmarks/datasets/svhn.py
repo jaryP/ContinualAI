@@ -4,7 +4,7 @@ from urllib.request import urlretrieve
 import numpy as np
 from scipy import io
 
-from continual_learning.datasets import SupervisedDownloadableDataset
+from continual_learning.banchmarks import SupervisedDownloadableDataset
 
 
 class SVHN(SupervisedDownloadableDataset):

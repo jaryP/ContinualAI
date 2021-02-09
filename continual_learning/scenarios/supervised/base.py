@@ -4,7 +4,7 @@ from typing import Callable, List, Union
 
 import numpy as np
 
-from continual_learning.datasets import SupervisedDataset
+from continual_learning.banchmarks import SupervisedDataset
 
 
 class ClassificationTask(SupervisedDataset):

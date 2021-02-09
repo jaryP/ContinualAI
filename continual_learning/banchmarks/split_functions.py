@@ -1,4 +1,4 @@
-__all__ = ['split_dataset']
+__all__ = ['split_dataset', 'extract_dev']
 
 from collections import defaultdict
 from typing import Union, Tuple

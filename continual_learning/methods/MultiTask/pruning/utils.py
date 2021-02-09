@@ -16,7 +16,7 @@ def get_accuracy(encoder: torch.nn.Module, solver: torch.nn.Module,
         true_labels = []
         predicted_labels = []
 
-        for j, x, y in task.get_iterable(batch_size):
+        for j, x, y in task.get_iterator(batch_size):
             x = x.to(device)
             true_labels.extend(y.tolist())
             emb = encoder(x)

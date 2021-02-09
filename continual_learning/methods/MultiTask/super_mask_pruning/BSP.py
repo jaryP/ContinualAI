@@ -100,7 +100,7 @@ class SuperMask(BaseMethod):
         # def backbone=backbone, solver=solver, task=t
         # self.set_task(task_i=task_i, network=network, invert_masks=True)
         task_i = task.index
-        dataset = task.get_iterable(64, shuffle=True)
+        dataset = task.get_iterator(64, shuffle=True)
 
         self.reset_hooks()
         

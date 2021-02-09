@@ -9,7 +9,7 @@ from zipfile import ZipFile
 import torchvision
 import numpy as np
 
-from continual_learning.datasets import SupervisedDownloadableDataset
+from continual_learning.banchmarks import SupervisedDownloadableDataset
 
 
 class Core50_128(SupervisedDownloadableDataset):

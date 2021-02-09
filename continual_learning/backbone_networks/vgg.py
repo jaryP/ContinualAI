@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 from typing import Union, List, Dict, Any, cast
 from torch.hub import load_state_dict_from_url
-# TODO: aggiustare caricamente dei pesi pre-adestrati
 
 __all__ = [
     'VGG', 'vgg11', 'vgg11_bn', 'vgg13', 'vgg13_bn', 'vgg16', 'vgg16_bn',

@@ -25,7 +25,7 @@ setuptools.setup(
     version=get_version("continual_learning/__init__.py"),
     author="Jary Pomponi",
     author_email="jarypomponi@gmail.org",
-    description="A base CL framework to speed-up experiments",
+    description="A base CL framework to speed-up prototyping and testing",
     # long_description=long_description,
     # long_description_content_type="text/markdown",
     url="https://github.com/jaryP/ContinualAI",

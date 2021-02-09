@@ -3,7 +3,7 @@ from typing import List, Union
 
 import numpy as np
 
-from continual_learning.datasets import SupervisedDataset
+from continual_learning.banchmarks import SupervisedDataset
 from continual_learning.scenarios.supervised import IncrementalProblem, ClassificationTask
 
 
@@ -42,7 +42,7 @@ class MultiTask(IncrementalProblem):
         for i in labels_sets:
             for j in range(len(i)):
                 labels_map[i[j]] = j
-
+        
         dataset.all()
         y = dataset.y
 
