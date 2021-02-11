@@ -5,18 +5,22 @@ from torch import nn
 
 class ForwardHook:
     def __init__(self, module: nn.Module, mask: torch.Tensor):
-        mask = mask.unsqueeze(0)
-        if isinstance(module, nn.Conv2d):
-            mask = mask.unsqueeze(-1).unsqueeze(-1)
+        # mask = mask.unsqueeze(0)
+        # if isinstance(module, nn.Conv2d):
+        #     mask = mask.unsqueeze(-1).unsqueeze(-1)
 
         self.mask = mask
         self.hook = module.register_forward_hook(self.forward_hook)
 
     def forward_hook(self, module, module_in, module_out):
+
         return module_out * self.mask
 
     def remove(self):
         self.hook.remove()
+
+    def update_mask(self, mask):
+        self.mask = mask
 
 
 def get_masks_from_gradients(gradients, prune_percentage, global_pruning, past_masks=None, device='cpu'):
@@ -28,12 +32,13 @@ def get_masks_from_gradients(gradients, prune_percentage, global_pruning, past_m
         grads = []
         for name, g in gradients.items():
             if name in past_masks:
-                g = g.view(-1).numpy()
-                m = past_masks[name]
-                gradients[name] *= m
-                m = m.view(-1).numpy()
-                g = g[m.astype(np.bool)]
-                grads.append(g)
+                # g = g.view(-1).numpy()
+                g = torch.masked_select(g.view(-1), past_masks[name].view(-1).bool())
+                # m = past_masks[name]
+                # gradients[name] *= m
+                # m = m.view(-1).numpy()
+                # g = g[m.astype(np.bool)]
+                grads.append(g.numpy())
             else:
                 grads.append(g.view(-1).numpy())
 
@@ -50,26 +55,29 @@ def get_masks_from_gradients(gradients, prune_percentage, global_pruning, past_m
         masks = {}
         for name, gs in gradients.items():
             if name not in past_masks:
-                thres = torch.quantile(gs, prune_percentage)
+                thres = torch.quantile(gs.view(-1), prune_percentage)
             else:
-                masked = torch.masked_select(gs, past_masks[name].bool())
+                masked = torch.masked_select(gs.view(-1), past_masks[name].view(-1).bool())
                 if len(masked) == 0:
                     thres = 0
                 else:
                     thres = torch.quantile(masked, prune_percentage)
 
-            masks[name] = torch.ge(gs, thres).float().to(device)
+            mask = torch.ge(gs, thres).float().to(device)
+            if name in past_masks:
+                mask *= past_masks[name]
+            masks[name] = mask
 
         # masks = {name: torch.ge(gs, torch.quantile(gs, prune_percentage)).float().to(device)
         #          for name, gs in gradients.items()}
 
-    for name, mask in masks.items():
-        mask = mask.squeeze()
-        if mask.sum() == 0:
-            max = torch.argmax(gradients[name])
-            mask = torch.zeros_like(mask)
-            mask[max] = 1.0
-        masks[name] = mask
+    # for name, mask in masks.items():
+    #     mask = mask.squeeze()
+    #     if mask.sum() == 0:
+    #         max = torch.argmax(gradients[name])
+    #         mask = torch.zeros_like(mask)
+    #         mask[max] = 1.0
+    #     masks[name] = mask
 
     return masks
 

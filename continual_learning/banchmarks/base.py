@@ -89,7 +89,7 @@ class UnsupervisedDataset(IndexesContainer):
 
     def __init__(self, x, train: Union[list, np.ndarray], test: [list, np.ndarray] = None,
                  dev: [list, np.ndarray] = None,
-                 transformer: Callable = None,
+                 transformer: Callable = None, test_transformer: Callable = None,
                  is_path_dataset: bool = False, images_path: str = '', **kwargs):
 
         """
@@ -112,7 +112,12 @@ class UnsupervisedDataset(IndexesContainer):
 
         self._x = x
 
+        if transformer is not None:
+            assert test_transformer is not None
+
         self._transformer = transformer if transformer is not None else lambda z: z
+        self._test_transformer = test_transformer if test_transformer is not None else lambda z: z
+
         # self.transformer = transformer if transformer is not None else lambda z: z
 
     # def apply_transformer(self, v: bool = True):
@@ -120,6 +125,15 @@ class UnsupervisedDataset(IndexesContainer):
     #         self._transformer = self.transformer
     #     else:
     #         self._transformer = lambda x: x
+
+    def _get_transformer(self, split: DatasetSplits = None):
+        if split is None:
+            split = self.current_split
+
+        if split == DatasetSplits.TRAIN:
+            return self._transformer
+        else:
+            return self._test_transformer
 
     def __getitem__(self, item: Union[slice, int, list, np.ndarray]) -> \
             Tuple[Union[list, tuple, int, list], Union[np.ndarray, list]]:
@@ -143,7 +157,7 @@ class UnsupervisedDataset(IndexesContainer):
             return item, self._transformer(img)
         else:
             if isinstance(item, (np.integer, int)):
-                return item, self._transformer(self._x[self.current_indexes[item]])
+                return item, self._get_transformer()(self._x[self.current_indexes[item]])
 
             if isinstance(item, slice):
                 s = item.start if item.start is not None else 0
@@ -153,7 +167,7 @@ class UnsupervisedDataset(IndexesContainer):
             elif isinstance(item, tuple):
                 item = list(item)
 
-            a = list(map(self._transformer, self._x[self.current_indexes[item]]))
+            a = list(map(self._get_transformer(), self._x[self.current_indexes[item]]))
 
             return item, a
 
@@ -165,7 +179,7 @@ class UnsupervisedDataset(IndexesContainer):
         if split is None:
             split = self.current_split
 
-        return list(map(self._transformer, self._x[self.get_indexes(split)]))
+        return list(map(self._get_transformer(), self._x[self.get_indexes(split)]))
 
     def data(self, split: DatasetSplits = None):
         return self.x(split)
@@ -243,7 +257,7 @@ class UnsupervisedDataset(IndexesContainer):
 
 class SupervisedDataset(UnsupervisedDataset):
     """
-    This class contains all the functions to operate with an supervised dataset.
+    This class contains all the functions to operate with an _supervised dataset.
     It allows to use transformation (pytorch style) and to have all the dataset split (train, test, split) in one place.
     it also possible to split the dataset using custom percentages of the whole dataset.
     :param x: The samples of the dataset.
@@ -257,7 +271,7 @@ class SupervisedDataset(UnsupervisedDataset):
     """
 
     def __init__(self, x, y, train, test=None, dev=None, transformer: Callable = None,
-                 target_transformer: Callable = None, **kwargs):
+                 test_transformer: Callable = None, target_transformer: Callable = None, **kwargs):
         """
         :param x: The samples of the dataset.
         :param y: The labels associated to x
@@ -268,7 +282,8 @@ class SupervisedDataset(UnsupervisedDataset):
         In the case it is undefined, the identity function is used,
         :param kwargs: Additional parameters.
         """
-        super().__init__(x=x, train=train, test=test, dev=dev, transformer=transformer, **kwargs)
+        super().__init__(x=x, train=train, test=test, dev=dev, transformer=transformer,
+                         test_transformer=test_transformer, **kwargs)
 
         self._y = y
         assert len(self._x) == len(self._y)

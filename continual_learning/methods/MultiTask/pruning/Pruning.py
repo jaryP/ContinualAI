@@ -3,10 +3,11 @@ import functools
 import numpy as np
 import torch
 from torch import nn
+from torch.nn import BatchNorm2d
 
 from continual_learning.methods.MultiTask.pruning.utils import PrunedLayer, get_accuracy
 from continual_learning.methods.base import BaseMethod
-from continual_learning.scenarios.supervised import ClassificationTask
+from continual_learning.scenarios.base import SupervisedTask
 from continual_learning.solvers.base import Solver
 
 
@@ -32,14 +33,30 @@ class Pruning(BaseMethod):
 
         self.tasks_masks = {}
 
+    def get_parameters(self, task: SupervisedTask, backbone: nn.Module, solver: Solver):
+        current_task = task.index
+
+        if current_task > 0:
+            for n, m in backbone.named_modules():
+                if isinstance(m, BatchNorm2d):
+                    m.track_running_stats = False
+
+        return super().get_parameters(task, backbone, solver)
+
     def apply_wrapper_to_model(self, model):
-        for name, module in model.named_modules():
+        # for name, module in model.named_modules():
+        #     if isinstance(module, (nn.Linear, nn.Conv2d)):
+        #         l = getattr(model, name)
+        #         setattr(model, name, PrunedLayer(l))
+        # print(model)
+        for name, module in model.named_children():
+
             if isinstance(module, (nn.Linear, nn.Conv2d)):
                 l = getattr(model, name)
                 setattr(model, name, PrunedLayer(l))
-        print(model)
+            self.apply_wrapper_to_model(module)
 
-    def set_task(self, backbone, solver, task: ClassificationTask,  **kwargs):
+    def set_task(self, backbone, solver, task: SupervisedTask,  **kwargs):
         if task.index in self.tasks_masks:
             for name, module in backbone.named_modules():
                 if isinstance(module, PrunedLayer):
@@ -66,14 +83,14 @@ class Pruning(BaseMethod):
 
         loss += l1
 
-    def after_gradient_calculation(self, backbone, solver, task, *args, **kwargs):
+    def after_gradient_calculation(self, backbone: nn.Module, task: SupervisedTask, solver: Solver, **kwargs):
         if task.index > 0:
             past_masks = self._get_past_masks(backbone, task.index)
             for name, module in backbone.named_modules():
                 if isinstance(module, PrunedLayer):
                     module.weight.grad *= torch.logical_not(past_masks[name])
 
-    def on_task_ends(self, backbone: nn.Module, task: ClassificationTask, solver: Solver, *args, **kwargs):
+    def on_task_ends(self, backbone: nn.Module, task: SupervisedTask, solver: Solver, *args, **kwargs):
         task.dev()
         if len(task) == 0:
             task.train()

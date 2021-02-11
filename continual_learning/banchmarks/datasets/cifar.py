@@ -20,12 +20,13 @@ class CIFAR10(SupervisedDownloadableDataset):
     url = 'https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz'
 
     def __init__(self, download_if_missing=True, data_folder=None, fine_labels=False,
-                 transformer: Callable = None, target_transformer: Callable = None):
+                 transformer: Callable = None, test_transformer: Callable = None, target_transformer: Callable = None):
 
         self.fine_labels = fine_labels
 
         super(CIFAR10, self).__init__(name='CIFAR10', download_if_missing=download_if_missing, data_folder=data_folder,
-                                      transformer=transformer, target_transformer=target_transformer)
+                                      transformer=transformer, target_transformer=target_transformer,
+                                      test_transformer=test_transformer)
 
     def load_dataset(self) -> Tuple[Tuple[np.ndarray, np.ndarray], Tuple[list, list, list]]:
 
@@ -75,13 +76,13 @@ class CIFAR100(CIFAR10):
     url = 'https://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz'
 
     def __init__(self, download_if_missing=True, data_folder=None, fine_labels=True,
-                 transformer: Callable = None, target_transformer: Callable = None):
+                 transformer: Callable = None, test_transformer: Callable = None, target_transformer: Callable = None):
 
         self.file_name = self.url.rpartition('/')[2]
         self.fine_labels = fine_labels
 
         super(CIFAR10, self).__init__(name='CIFAR100', download_if_missing=download_if_missing,
-                                      data_folder=data_folder,
+                                      data_folder=data_folder, test_transformer=test_transformer,
                                       transformer=transformer, target_transformer=target_transformer)
 
     def load_dataset(self) -> Tuple[Tuple[np.ndarray, np.ndarray], Tuple[list, list, list]]:

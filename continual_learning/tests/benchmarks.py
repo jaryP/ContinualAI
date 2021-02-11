@@ -112,12 +112,21 @@ class MNIST_tests(unittest.TestCase):
         self.assertTrue(True)
 
     def test_transformers(self):
-        t = lambda x: x + 100
-        d = self.dataset_class(download_if_missing=True, transformer=t, data_folder=self.data_folder)
-        d1 = d[0][1]
+        t = lambda x: x * 0 - 1000
+        tt = lambda x: x * 0
+        d = self.dataset_class(download_if_missing=True, transformer=t, test_transformer=tt,
+                               data_folder=self.data_folder)
+        _, x, y = d[0]
+        d.test()
+        _, test_x, _ = d[0]
+        # print(x)
+        # print(test_x)
+        self.assertTrue((x == test_x).sum() == 0)
+
         d = self.dataset_class(download_if_missing=True, transformer=None, data_folder=self.data_folder)
-        d2 = d[0][1]
-        self.assertTrue((d1 == d2).sum() == 0)
+
+        _, x2, _ = d[0]
+        self.assertTrue((x == x2).sum() == 0)
 
 
 class KMNIST_tests(MNIST_tests):

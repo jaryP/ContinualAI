@@ -73,7 +73,8 @@ class UnsupervisedDownloadableDataset(DownloadableDataset, UnsupervisedDataset, 
 
 class SupervisedDownloadableDataset(DownloadableDataset, SupervisedDataset, ABC):
     def __init__(self, name, download_if_missing: bool = True, data_folder: str = None,
-                 transformer: Callable = None, target_transformer: Callable = None, **kwargs):
+                 transformer: Callable = None, test_transformer: Callable = None, target_transformer: Callable = None,
+                 **kwargs):
         super().__init__(name=name, transformer=transformer,
                          download_if_missing=download_if_missing, data_folder=data_folder, **kwargs)
         (x, y), (train, test, dev) = self.load_dataset()
@@ -83,6 +84,7 @@ class SupervisedDownloadableDataset(DownloadableDataset, SupervisedDataset, ABC)
 
         super(DownloadableDataset, self).__init__(x=x, y=y, train=train, test=test, dev=dev,
                                                   transformer=transformer, target_transformer=target_transformer,
+                                                  test_transformer=test_transformer,
                                                   **kwargs)
 
     @abstractmethod

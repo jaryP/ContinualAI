@@ -4,11 +4,11 @@ import numpy as np
 import torch
 from torch import nn
 
-from continual_learning.scenarios.supervised import ClassificationTask
+from continual_learning.scenarios.base import SupervisedTask
 
 
 def get_accuracy(encoder: torch.nn.Module, solver: torch.nn.Module,
-                 task: ClassificationTask, batch_size=64, device='cpu'):
+                 task: SupervisedTask, batch_size=64, device='cpu'):
     with torch.no_grad():
         encoder.eval()
         solver.eval()

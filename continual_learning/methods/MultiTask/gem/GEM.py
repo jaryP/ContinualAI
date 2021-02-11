@@ -9,7 +9,7 @@ from torch import nn
 
 from continual_learning.methods import BaseMethod
 from continual_learning.methods.MultiTask.gem.utils import qp
-from continual_learning.scenarios.supervised import ClassificationTask
+from continual_learning.scenarios.base import SupervisedTask
 
 
 class GradientEpisodicMemory(BaseMethod):
@@ -43,7 +43,7 @@ class GradientEpisodicMemory(BaseMethod):
         self.task_memory = []
         self.loss_f = nn.CrossEntropyLoss(reduction='mean')
 
-    def on_task_ends(self, task: ClassificationTask, encoder: torch.nn.Module, *args, **kwargs):
+    def on_task_ends(self, task: SupervisedTask, encoder: torch.nn.Module, *args, **kwargs):
 
         task.train()
 

@@ -6,9 +6,9 @@ from torch import nn
 
 class ForwardHook:
     def __init__(self, module: nn.Module, mask: torch.Tensor):
-        mask = mask.unsqueeze(0)
-        if isinstance(module, nn.Conv2d):
-            mask = mask.unsqueeze(-1).unsqueeze(-1)
+        # mask = mask.unsqueeze(0)
+        # if isinstance(module, nn.Conv2d):
+        #     mask = mask.unsqueeze(-1).unsqueeze(-1)
 
         self.mask = mask
         self.hook = module.register_forward_hook(self.forward_hook)

@@ -93,6 +93,14 @@ def _vgg(arch: str, cfg: str, batch_norm: bool, pretrained: bool, progress: bool
     return model
 
 
+def custom_vgg(layers, batch_norm=False, **kwargs):
+    assert all([l == 'M' or isinstance(l, int) for l in layers]), 'A layer can be "M" or an integer. ' \
+                                                                  'For example, vgg1 can be defined as [64, "M", 128,' \
+                                                                  ' "M", 256, 256, "M", 512, 512, "M", 512, 512, "M"],'
+
+    model = VGG(make_layers(layers, batch_norm=batch_norm), **kwargs)
+    return model
+
 def vgg11(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> VGG:
     return _vgg('vgg11', 'A', False, pretrained, progress, **kwargs)
 

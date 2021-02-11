@@ -5,7 +5,7 @@ import torchvision
 from torch import nn
 
 from continual_learning.banchmarks import MNIST, DatasetSplits
-from continual_learning.scenarios.supervised_new.incremental import MultiTask
+from continual_learning.scenarios.supervised.NewClasses.multi_task import MultiTask
 
 
 class Multi_Task_tests(unittest.TestCase):

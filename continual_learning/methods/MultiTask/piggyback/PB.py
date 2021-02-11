@@ -3,7 +3,7 @@ from torch import nn
 
 from continual_learning.methods import BaseMethod
 from continual_learning.methods.MultiTask.piggyback.base import PiggyBackLayer, ForwardHook
-from continual_learning.scenarios.supervised import ClassificationTask
+from continual_learning.scenarios.base import SupervisedTask
 from continual_learning.solvers.base import Solver
 from continual_learning.solvers.multi_task import MultiHeadsSolver
 
@@ -26,7 +26,7 @@ class PiggyBack(BaseMethod):
                 setattr(model, name, PiggyBackLayer(l))
         print(model)
 
-    def get_parameters(self, task: ClassificationTask, backbone: nn.Module, solver: Solver):
+    def get_parameters(self, task: SupervisedTask, backbone: nn.Module, solver: Solver):
         parameters = []
         current_task = task.index
 
@@ -39,7 +39,7 @@ class PiggyBack(BaseMethod):
 
         return parameters
 
-    def set_task(self, backbone: nn.Module, task: ClassificationTask, **kwargs):
+    def set_task(self, backbone: nn.Module, task: SupervisedTask, **kwargs):
         task_i = task.index
         if task_i == 0 or task_i not in self.task_masks:
             return
@@ -53,7 +53,7 @@ class PiggyBack(BaseMethod):
                 h = ForwardHook(m.layer, self.task_masks[task_i][n])
                 self.hooks.append(h)
 
-    def on_task_starts(self, backbone: nn.Module, task: ClassificationTask, *args, **kwargs):
+    def on_task_starts(self, backbone: nn.Module, task: SupervisedTask, *args, **kwargs):
         for n, m in backbone.named_modules():
             if isinstance(m, PiggyBackLayer):
                 m.add_task()

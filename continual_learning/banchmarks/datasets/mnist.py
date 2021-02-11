@@ -10,21 +10,22 @@ __all__ = ['MNIST', 'K49MNIST', 'KMNIST']
 
 
 class MNIST(SupervisedDownloadableDataset):
-
     url = {'train': {'images': 'http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz',
                      'labels': 'http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz'},
            'test': {'images': 'http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz',
                     'labels': 'http://yann.lecun.com/exdb/mnist/t10k-labels-idx1-ubyte.gz'}}
 
     def __init__(self, download_if_missing: bool = True, data_folder: str = None,
-                 transformer: Callable = None, target_transformer: Callable = None, ):
+                 transformer: Callable = None, test_transformer: Callable = None, target_transformer: Callable = None):
 
         self._get_int = lambda x: int(codecs.encode(x, 'hex'), 16)
 
         self.file_names = [url.rpartition('/')[2] for url in self.url]
 
         super().__init__(name='MNIST', download_if_missing=download_if_missing, data_folder=data_folder,
-                         transformer=transformer, target_transformer=target_transformer)
+                         transformer=transformer,
+                         target_transformer=target_transformer,
+                         test_transformer=test_transformer)
 
     def _load_image(self, data):
         length = self._get_int(data[4:8])
@@ -84,38 +85,37 @@ class MNIST(SupervisedDownloadableDataset):
 
 
 class KMNIST(MNIST):
-
     url = {'train': {'images': 'http://codh.rois.ac.jp/kmnist/dataset/kmnist/train-images-idx3-ubyte.gz',
                      'labels': 'http://codh.rois.ac.jp/kmnist/dataset/kmnist/train-labels-idx1-ubyte.gz'},
            'test': {'images': 'http://codh.rois.ac.jp/kmnist/dataset/kmnist/t10k-images-idx3-ubyte.gz',
                     'labels': 'http://codh.rois.ac.jp/kmnist/dataset/kmnist/t10k-labels-idx1-ubyte.gz'}}
 
     def __init__(self, download_if_missing: bool = True, data_folder: str = None,
-                 transformer: Callable = None, target_transformer: Callable = None):
-
+                 transformer: Callable = None, test_transformer: Callable = None, target_transformer: Callable = None):
         self._get_int = lambda x: int(codecs.encode(x, 'hex'), 16)
         self.file_names = [url.rpartition('/')[2] for url in self.url]
 
         super(MNIST, self).__init__(name='KMNIST', download_if_missing=download_if_missing, data_folder=data_folder,
-                                    transformer=transformer, target_transformer=target_transformer)
+                                    transformer=transformer, target_transformer=target_transformer,
+                                    test_transformer=test_transformer)
 
 
 class K49MNIST(MNIST):
-
     url = {'train': {'images': 'http://codh.rois.ac.jp/kmnist/dataset/k49/k49-train-imgs.npz',
                      'labels': 'http://codh.rois.ac.jp/kmnist/dataset/k49/k49-train-labels.npz'},
            'test': {'images': 'http://codh.rois.ac.jp/kmnist/dataset/k49/k49-test-imgs.npz',
                     'labels': 'http://codh.rois.ac.jp/kmnist/dataset/k49/k49-test-labels.npz'}}
 
     def __init__(self, download_if_missing: bool = True, data_folder: str = None,
-                 transformer: Callable = None, target_transformer: Callable = None):
+                 transformer: Callable = None, test_transformer: Callable = None, target_transformer: Callable = None):
 
         self._get_int = lambda x: int(codecs.encode(x, 'hex'), 16)
 
         self.file_names = [url.rpartition('/')[2] for url in self.url]
 
         super(MNIST, self).__init__(name='K49MNIST', download_if_missing=download_if_missing, data_folder=data_folder,
-                                    transformer=transformer, target_transformer=target_transformer)
+                                    transformer=transformer, target_transformer=target_transformer,
+                                    test_transformer=test_transformer)
 
     def load_dataset(self) -> Tuple[Tuple[np.ndarray, np.ndarray], Tuple[list, list, list]]:
 

@@ -3,7 +3,7 @@ from typing import Union
 import torch
 from torch import nn
 
-from continual_learning.methods.MultiTask.super_mask_pruning.base.distributions import TrainableBeta, TrainableLaplace, \
+from continual_learning.methods.MultiTask.super_mask_pruning.base.distributions import TrainableBeta, TrainableLaplace,\
     TrainableNormal, TrainableWeights, TrainableExponential, TrainableGamma
 
 

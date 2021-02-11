@@ -6,7 +6,7 @@ from copy import deepcopy
 import torch
 
 from continual_learning.methods import BaseMethod
-from continual_learning.scenarios.supervised import ClassificationTask
+from continual_learning.scenarios.base import SupervisedTask
 
 
 class ElasticWeightConsolidation(BaseMethod):
@@ -39,7 +39,7 @@ class ElasticWeightConsolidation(BaseMethod):
         self.memory = list()
         self.loss = torch.nn.CrossEntropyLoss(reduction='mean')
 
-    def on_task_ends(self, task: ClassificationTask, encoder: torch.nn.Module, solver, *args, **kwargs):
+    def on_task_ends(self, task: SupervisedTask, encoder: torch.nn.Module, solver, *args, **kwargs):
 
         final_w = {n: deepcopy(p.data) for n, p in itertools.chain(encoder.named_parameters())
                    if p.requires_grad and p.grad is not None}

@@ -8,7 +8,7 @@ import torch
 import torch.nn.functional as F
 
 from continual_learning.methods.base import BaseMethod
-from continual_learning.scenarios.supervised import ClassificationTask
+from continual_learning.scenarios.base import SupervisedTask
 
 
 class EmbeddingRegularization(BaseMethod):
@@ -48,7 +48,7 @@ class EmbeddingRegularization(BaseMethod):
         assert distance in ['cosine', 'euclidean']
         self.distance = distance
 
-        # self.supervised = config.get('supervised', True)
+        # self._supervised = config.get('_supervised', True)
         # self.normalize = config.get('normalize', False)
         # self.batch_size = config.get('batch_size', 25)
 
@@ -62,7 +62,7 @@ class EmbeddingRegularization(BaseMethod):
 
         self.task_memory = []
 
-    def on_task_ends(self, task: ClassificationTask, backbone: torch.nn.Module, *args, **kwargs):
+    def on_task_ends(self, task: SupervisedTask, backbone: torch.nn.Module, *args, **kwargs):
 
         task.train()
 
