@@ -12,11 +12,7 @@ class Solver(nn.Module, ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def task_parameters(self, t=None, recuse=True):
-        raise NotImplementedError
-
-    @abstractmethod
-    def parameters(self, t=None, recuse=True):
+    def get_parameters(self, task=None, recuse=True):
         raise NotImplementedError
 
     @abstractmethod

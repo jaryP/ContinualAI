@@ -36,11 +36,8 @@ class BaseMethod(ABC, torch.nn.Module):
         pass
 
     def get_parameters(self, task, backbone: nn.Module, solver: Solver):
-        task_i = task.index
         parameters = []
         parameters.extend(backbone.parameters())
-        if isinstance(solver, MultiHeadsSolver):
-            parameters.extend(solver.heads[task_i].parameters())
         return parameters
 
     def set_task(self, backbone, solver, task,  **kwargs):

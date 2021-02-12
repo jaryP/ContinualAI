@@ -53,9 +53,6 @@ class BatchEnsemble(BaseMultiTaskMethod):
                     m.track_running_stats = False
                     # parameters.append(m.parameters())
 
-        if isinstance(solver, MultiHeadsSolver):
-            parameters.extend(solver.heads[current_task].parameters())
-
         return parameters
 
     def set_task(self, backbone: nn.Module, task: SupervisedTask, **kwargs):

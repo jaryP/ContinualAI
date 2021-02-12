@@ -1,15 +1,17 @@
+import itertools
 from collections import defaultdict
 from typing import Callable, Union, List
 
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
+import numpy as np
 
 from continual_learning.eval import Evaluator
 from continual_learning.eval.metrics import Metric
 from continual_learning.methods.MultiTask.base import BaseMultiTaskMethod, Naive
 from continual_learning.scenarios.base import AbstractTrainer
-from continual_learning.scenarios.supervised import MultiTask
+from continual_learning.scenarios.supervised.supervised_train_supervised_test import MultiTask
 from continual_learning.scenarios.tasks import SupervisedTask
 from continual_learning.solvers.multi_task import MultiHeadsSolver
 from continual_learning.banchmarks import DatasetSplits
@@ -169,7 +171,9 @@ class Trainer(AbstractTrainer):
 
         self.method.on_task_starts(backbone=self.backbone, solver=self.solver, task=task)
 
-        parameters = self.method.get_parameters(task=task, backbone=self.backbone, solver=self.solver)
+        parameters = itertools.chain(
+            self.method.get_parameters(task=task, backbone=self.backbone, solver=self.solver),
+            self.solver.get_parameters(task=task.index))
 
         if callable(self.optimizer):
             optimizer = self.optimizer(parameters)
@@ -213,80 +217,80 @@ class Trainer(AbstractTrainer):
                                        split=DatasetSplits.TEST)
 
 
-if __name__ == '__main__':
-    import numpy as np
-    import torch
-    from torch import nn
-
-    # from backbone_networks.lenet import LeNet
-    # from continual_learning.banchmarks.cifar import CIFAR10
-    # from eval import Evaluator, Accuracy, TotalAccuracy, BackwardTransfer, TimeMetric, FinalAccuracy, LastBackwardTransfer
-    # from methods.MultiTask import EmbeddingRegularization
-    # from methods.MultiTask.super_mask_pruning.BSP import SuperMask
-    # from scenarios._supervised import MultiTask, ClassificationTask
-    # from solvers.multi_task import MultiHeadsSolver
-    # from continual_learning.backbone_networks import resnet20
-    # from continual_learning.backbone_networks.lenet import LeNet
-    # from continual_learning.banchmarks.cifar import CIFAR10
-    # from continual_learning.banchmarks.core50 import Core50_128
-    from torchvision.transforms import transforms
-
-    from continual_learning.eval.metrics.cl import BackwardTransfer
-    from continual_learning.eval.metrics.cl import FinalAccuracy
-    from continual_learning.eval.metrics.classification import Accuracy
-
-    from continual_learning.backbone_networks import LeNet
-    from continual_learning.banchmarks import MNIST, DatasetSplits
-    # from continual_learning.eval import Evaluator, Accuracy, BackwardTransfer, TotalAccuracy, FinalAccuracy, \
-    #     LastBackwardTransfer, TimeMetric, Metric
-    # from continual_learning.scenarios._supervised import ClassificationTask, MultiTask
-    # from continual_learning.methods.base import Naive
-    from continual_learning.scenarios.tasks import SupervisedTask
-    from continual_learning.scenarios.supervised.supervised_train_supervised_test.multi_task import MultiTask
-    from continual_learning.solvers.multi_task import MultiHeadsSolver
-
-    t = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize(0.1307, 0.3081),
-        transforms.Resize(32),
-        # torch.nn.Flatten(0)
-    ])
-
-    tt = t
-    d = MNIST(download_if_missing=True, transformer=t, test_transformer=tt,
-              data_folder='/media/jary/Data/progetti/CL/cl_framework/continual_learning/tests/training/mnist')
-    mt = MultiTask(dataset=d, labels_per_task=2)
-
-    backbone = LeNet(input_size=1)
-
-    _, img, _ = next(iter(mt[0].get_iterator(batch_size=1)))
-    output_dim = backbone(img).shape[1:]
-    if len(output_dim) == 1:
-        output_dim = output_dim[0]
-
-
-    def solver_fn(input, output):
-        return nn.Sequential(*[nn.Linear(input, input // 2),
-                               nn.Dropout(0.25),
-                               nn.ReLU(),
-                               nn.Linear(input // 2, input // 4),
-                               nn.Dropout(0.25),
-                               nn.ReLU(),
-                               nn.Linear(input // 4, output)])
-
-
-    solver = MultiHeadsSolver(input_dim=output_dim, topology=solver_fn)
-    method = Naive()
-
-
-    def opt(params):
-        return torch.optim.Adam(params, lr=0.001)
-
-
-    trainer = Trainer(batch_size=32, backbone=backbone, task_epochs=1, solver=solver, tasks=mt,
-                      optimizer=opt, criterion=torch.nn.CrossEntropyLoss(), device='cpu', method=method,
-                      metrics=[Accuracy(), BackwardTransfer(), FinalAccuracy()])
-
-    trainer.train_full()
-
-    print(trainer.evaluator.cl_results())
+# if __name__ == '__main__':
+#     import numpy as np
+#     import torch
+#     from torch import nn
+#
+#     # from backbone_networks.lenet import LeNet
+#     # from continual_learning.banchmarks.cifar import CIFAR10
+#     # from eval import Evaluator, Accuracy, TotalAccuracy, BackwardTransfer, TimeMetric, FinalAccuracy, LastBackwardTransfer
+#     # from methods.MultiTask import EmbeddingRegularization
+#     # from methods.MultiTask.super_mask_pruning.BSP import SuperMask
+#     # from scenarios._supervised import MultiTask, ClassificationTask
+#     # from solvers.multi_task import MultiHeadsSolver
+#     # from continual_learning.backbone_networks import resnet20
+#     # from continual_learning.backbone_networks.lenet import LeNet
+#     # from continual_learning.banchmarks.cifar import CIFAR10
+#     # from continual_learning.banchmarks.core50 import Core50_128
+#     from torchvision.transforms import transforms
+#
+#     from continual_learning.eval.metrics.cl import BackwardTransfer
+#     from continual_learning.eval.metrics.cl import FinalAccuracy
+#     from continual_learning.eval.metrics.classification import Accuracy
+#
+#     from continual_learning.backbone_networks import LeNet
+#     from continual_learning.banchmarks import MNIST, DatasetSplits
+#     # from continual_learning.eval import Evaluator, Accuracy, BackwardTransfer, TotalAccuracy, FinalAccuracy, \
+#     #     LastBackwardTransfer, TimeMetric, Metric
+#     # from continual_learning.scenarios._supervised import ClassificationTask, MultiTask
+#     # from continual_learning.methods.base import Naive
+#     from continual_learning.scenarios.tasks import SupervisedTask
+#     from continual_learning.scenarios.supervised.supervised_train_supervised_test.multi_task import MultiTask
+#     from continual_learning.solvers.multi_task import MultiHeadsSolver
+#
+#     t = transforms.Compose([
+#         transforms.ToTensor(),
+#         transforms.Normalize(0.1307, 0.3081),
+#         transforms.Resize(32),
+#         # torch.nn.Flatten(0)
+#     ])
+#
+#     tt = t
+#     d = MNIST(download_if_missing=True, transformer=t, test_transformer=tt,
+#               data_folder='/media/jary/Data/progetti/CL/cl_framework/continual_learning/tests/training/mnist')
+#     mt = MultiTask(dataset=d, labels_per_task=2)
+#
+#     backbone = LeNet(input_size=1)
+#
+#     _, img, _ = next(iter(mt[0].get_iterator(batch_size=1)))
+#     output_dim = backbone(img).shape[1:]
+#     if len(output_dim) == 1:
+#         output_dim = output_dim[0]
+#
+#
+#     def solver_fn(input, output):
+#         return nn.Sequential(*[nn.Linear(input, input // 2),
+#                                nn.Dropout(0.25),
+#                                nn.ReLU(),
+#                                nn.Linear(input // 2, input // 4),
+#                                nn.Dropout(0.25),
+#                                nn.ReLU(),
+#                                nn.Linear(input // 4, output)])
+#
+#
+#     solver = MultiHeadsSolver(input_dim=output_dim, topology=solver_fn)
+#     method = Naive()
+#
+#
+#     def opt(params):
+#         return torch.optim.Adam(params, lr=0.001)
+#
+#
+#     trainer = Trainer(batch_size=32, backbone=backbone, task_epochs=1, solver=solver, tasks=mt,
+#                       optimizer=opt, criterion=torch.nn.CrossEntropyLoss(), device='cpu', method=method,
+#                       metrics=[Accuracy(), BackwardTransfer(), FinalAccuracy()])
+#
+#     trainer.train_full()
+#
+#     print(trainer.evaluator.cl_results())

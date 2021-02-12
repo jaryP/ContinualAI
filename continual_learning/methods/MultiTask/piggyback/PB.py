@@ -28,14 +28,10 @@ class PiggyBack(BaseMultiTaskMethod):
 
     def get_parameters(self, task: SupervisedTask, backbone: nn.Module, solver: Solver):
         parameters = []
-        current_task = task.index
 
         for n, m in backbone.named_modules():
             if isinstance(m, PiggyBackLayer):
                 parameters.append(m.mask)
-
-        if isinstance(solver, MultiHeadsSolver):
-            parameters.extend(solver.heads[current_task].parameters())
 
         return parameters
 

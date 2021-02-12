@@ -83,6 +83,6 @@ class AbstractTrainer(ABC):
     def add_parameters_to_optimizer(self, optimizer: torch.optim.Optimizer, parameters: dict):
         optimizer.add_param_group({'params': parameters})
 
-    def change_optimizer_parameters(self, optimizer: torch.optim.Optimizer, parameters: dict):
+    def change_optimizer_parameters(self, optimizer: torch.optim.Optimizer, parameters):
         optimizer.param_groups[0]['params'] = parameters
 
