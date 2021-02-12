@@ -13,7 +13,7 @@ from continual_learning.solvers.multi_task import MultiHeadsSolver
 
 
 class SuperMask(BaseMethod):
-    def __init__(self, mask_epochs=5, global_pruning=False,
+    def __init__(self, mask_epochs=5, global_pruning=False, hard_pruning: bool = True,
                  mask_parameters: dict = None, pruning_percentage=0.5, device='cpu'):
         super().__init__()
         if mask_parameters is None:
@@ -28,6 +28,7 @@ class SuperMask(BaseMethod):
         self.mask_parameters = mask_parameters
         self.global_pruning = global_pruning
         self.mask_epochs = mask_epochs
+        self.hard_pruning = hard_pruning
 
         self.hooks = []
         self.tasks_masks = defaultdict(list)

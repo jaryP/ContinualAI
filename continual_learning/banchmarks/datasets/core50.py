@@ -12,6 +12,16 @@ import numpy as np
 from continual_learning.banchmarks import SupervisedDownloadableDataset
 
 
+scen2dirs = {
+    'ni': "batches_filelists/NI_inc/",
+    'nc': "batches_filelists/NC_inc/",
+    'nic': "batches_filelists/NIC_inc/",
+    'nicv2_79': "NIC_v2_79/",
+    'nicv2_196': "NIC_v2_196/",
+    'nicv2_391': "NIC_v2_391/"
+}
+
+
 class Core50_128(SupervisedDownloadableDataset):
     url = ['http://bias.csr.unibo.it/maltoni/download/core50/core50_128x128.zip',
            'https://vlomonaco.github.io/core50/data/paths.pkl',
@@ -21,6 +31,15 @@ class Core50_128(SupervisedDownloadableDataset):
            # 'https://vlomonaco.github.io/core50/data/batches_filelists.zip',
            # 'https://vlomonaco.github.io/core50/data/batches_filelists_NICv2.zip'
            ]
+
+    nbatch = {
+        'ni': 8,
+        'nc': 9,
+        'nic': 79,
+        'nicv2_79': 79,
+        'nicv2_196': 196,
+        'nicv2_391': 391
+    }
 
     def __init__(self, download_if_missing: bool = True, data_folder: str = None,
                  transformer: Callable = None, test_transformer: Callable = None, target_transformer: Callable = None,

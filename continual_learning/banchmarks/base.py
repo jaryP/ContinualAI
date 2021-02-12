@@ -1,4 +1,6 @@
 import os
+from abc import ABC, abstractmethod
+from collections import Sequence
 from enum import unique, Enum
 from typing import Callable, Union, Tuple, List
 
@@ -15,6 +17,15 @@ class DatasetSplits(Enum):
     TEST = 1
     DEV = 2
     ALL = 3
+
+
+class Dataset(ABC):
+    @abstractmethod
+    def __getitem__(self, item):
+        raise NotImplementedError
+
+    def __len__(self, item):
+        raise NotImplementedError
 
 
 class IndexesContainer(object):
@@ -72,7 +83,7 @@ class IndexesContainer(object):
         self.current_split = DatasetSplits.ALL
 
 
-class UnsupervisedDataset(IndexesContainer):
+class UnsupervisedDataset(IndexesContainer, Dataset):
     # """
     # This class contains all the functions to operate with an unsupervised dataset
     # (a dataset which does not contains labels).

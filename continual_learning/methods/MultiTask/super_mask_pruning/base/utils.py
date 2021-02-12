@@ -13,7 +13,6 @@ class ForwardHook:
         self.hook = module.register_forward_hook(self.forward_hook)
 
     def forward_hook(self, module, module_in, module_out):
-
         return module_out * self.mask
 
     def remove(self):
@@ -23,8 +22,8 @@ class ForwardHook:
         self.mask = mask
 
 
-def get_masks_from_gradients(gradients, prune_percentage, global_pruning, past_masks=None, device='cpu'):
-
+def get_masks_from_gradients(gradients, prune_percentage, global_pruning, past_masks=None,
+                             hard_pruning: bool = True, device='cpu'):
     if past_masks is None:
         past_masks = {}
 
@@ -64,8 +63,9 @@ def get_masks_from_gradients(gradients, prune_percentage, global_pruning, past_m
                     thres = torch.quantile(masked, prune_percentage)
 
             mask = torch.ge(gs, thres).float().to(device)
-            if name in past_masks:
-                mask *= past_masks[name]
+            if hard_pruning:
+                if name in past_masks:
+                    mask *= past_masks[name]
             masks[name] = mask
 
         # masks = {name: torch.ge(gs, torch.quantile(gs, prune_percentage)).float().to(device)

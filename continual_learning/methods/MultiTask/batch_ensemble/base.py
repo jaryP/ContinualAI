@@ -32,8 +32,8 @@ class BElayer(nn.Module):
         if task is None:
             task = self.current_task
         # batch_size = x.size(0)
-        # rest = batch_size % self.ensemble
-        # m = batch_size // self.ensemble
+        # rest = batch_size % self.single_task
+        # m = batch_size // self.single_task
         # alpha = self.alpha.repeat(1, m).view(-1,  self.input_dim)
         # gamma = self.gamma.repeat(1, m).view(-1,  self.out_dim)
         # print(self.tasks[task].shape)

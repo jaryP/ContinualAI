@@ -3,11 +3,13 @@ from typing import Union, List
 import numpy as np
 
 from continual_learning.banchmarks import SupervisedDataset, DatasetSplits
-from continual_learning.scenarios.base import SupervisedTask
-from continual_learning.scenarios.supervised.base import IncrementalProblem, get_labels_set
+from continual_learning.scenarios.base import SupervisedTask, IncrementalProblem
+from continual_learning.scenarios.supervised.utils import get_labels_set
 
 
 class SingleIncrementalTask(IncrementalProblem):
+    #TODO: Implementare test
+
     def generate_tasks(self, dataset: SupervisedDataset, labels_per_task: int, shuffle_labels: bool = False,
                        random_state: Union[np.random.RandomState, int] = None) -> List[SupervisedTask]:
 

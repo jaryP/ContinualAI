@@ -3,8 +3,8 @@ from typing import Union, List
 import numpy as np
 
 from continual_learning.banchmarks import SupervisedDataset, DatasetSplits
-from continual_learning.scenarios.base import SupervisedTask
-from continual_learning.scenarios.supervised.base import IncrementalProblem, get_labels_set
+from continual_learning.scenarios.base import SupervisedTask, IncrementalProblem
+from continual_learning.scenarios.supervised.utils import get_labels_set
 
 
 class MultiTask(IncrementalProblem):

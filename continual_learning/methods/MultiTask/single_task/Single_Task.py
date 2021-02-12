@@ -6,7 +6,7 @@ from continual_learning.methods import BaseMethod
 from continual_learning.scenarios.base import SupervisedTask
 
 
-class Ensemble(BaseMethod):
+class SingleTask(BaseMethod):
     def __init__(self, **kwargs):
         super().__init__()
         self.tasks_dict = {}

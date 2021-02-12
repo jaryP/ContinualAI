@@ -66,10 +66,10 @@ class PrunedLayer(nn.Module):
             w = w * mask
 
         if self.is_conv:
-            o = nn.functional.conv2d(x, w, self.layer.bias, stride=self.layer.stride, padding=self.layer.padding,
+            o = nn.functional.conv2d(x, w, None, stride=self.layer.stride, padding=self.layer.padding,
                                      dilation=self.layer.dilation, groups=self.layer.groups)
         else:
-            o = nn.functional.linear(x, w, self.layer.bias)
+            o = nn.functional.linear(x, w, None)
 
         return o
 
