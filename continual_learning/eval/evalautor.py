@@ -26,9 +26,9 @@ class Evaluator:
         self._cl_metrics = []
         self._others_metrics = []
 
-        self._scores = {split: {} for split in DatasetSplits}
+        self._scores = {split: {} for split in DatasetSplits if split != DatasetSplits.ALL}
         self._labels = {}
-        self._r = dict()
+        self._r = {split: {} for split in DatasetSplits if split != DatasetSplits.ALL}
 
         # self._scores = defaultdict(lambda: defaultdict(list))
 
@@ -90,10 +90,12 @@ class Evaluator:
         return default_to_regular(self._scores)
 
     def cl_results(self) -> dict:
-        res = {}
         _r = self.task_matrix
-        for name, m in self._classification_metrics:
-            res[name] = {n: m(_r[name]) for n, m in self._cl_metrics}
+        res = {s: {} for s in _r}
+        for split in _r:
+            print(split)
+            for name, m in self._classification_metrics:
+                res[split][name] = {n: m(_r[split][name]) for n, m in self._cl_metrics}
         return res
 
     def others_metrics_results(self) -> dict:
@@ -135,7 +137,8 @@ class Evaluator:
             self._scores[evaluated_split][name] = _s
             scores[name] = _m
 
-            r = self._r.get(name, None)
+            r = self._r.get(evaluated_split, {})
+            r = r.get(name, None)
 
             if r is None:
                 r = np.zeros((mx, mx), dtype=float)
@@ -145,7 +148,7 @@ class Evaluator:
                 r = com
 
             r[current_task, evaluated_task] = _m
-            self._r[name] = r
+            self._r[evaluated_split][name] = r
 
         return scores
 

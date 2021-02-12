@@ -60,9 +60,13 @@ class Trainer(AbstractTrainer):
 
         self.evaluator = Evaluator(classification_metrics=metrics)
 
-    def evaluate_on_split(self, task: SupervisedTask, current_task_index: int, split: DatasetSplits, batch_size: int):
+    def evaluate_on_split(self, task: SupervisedTask, split: DatasetSplits, batch_size: int,
+                          current_task_index: int = None):
+
         evaluated_task_index = task.index
         task.current_split = split
+        if current_task_index is None:
+            current_task_index = evaluated_task_index
 
         if len(task) > 0:
             y_true, y_pred = get_predictions(self.backbone, self.solver, task, evaluate_task_index=evaluated_task_index,
@@ -93,7 +97,7 @@ class Trainer(AbstractTrainer):
 
         self.backbone.to(self.device)
 
-        modified_task = self.method.preprocess_dataset()
+        modified_task = self.method.preprocess_dataset(backbone=self.backbone, solver=self.solver, task=task)
 
         if modified_task is not None:
             task = modified_task
@@ -197,9 +201,6 @@ class Trainer(AbstractTrainer):
             self.evaluate_on_split(task=task, batch_size=self.batch_size*2, current_task_index=task.index,
                                    split=DatasetSplits.DEV)
 
-        self.evaluate_on_split(task=task, batch_size=self.batch_size * 2, current_task_index=task.index,
-                               split=DatasetSplits.TEST)
-
         self.method.on_task_ends(backbone=self.backbone, solver=self.solver, task=task)
 
     def train_full(self):
@@ -212,6 +213,16 @@ class Trainer(AbstractTrainer):
 
             for j in range(i + 1):
                 evaluated_task = self.tasks[j]
+                self.method.set_task(backbone=self.backbone, solver=self.solver, task=evaluated_task)
+
+                self.evaluate_on_split(task=evaluated_task, batch_size=self.batch_size * 2,
+                                       current_task_index=task.index,
+                                       split=DatasetSplits.TRAIN)
+
+                self.evaluate_on_split(task=evaluated_task, batch_size=self.batch_size * 2,
+                                       current_task_index=task.index,
+                                       split=DatasetSplits.DEV)
+
                 self.evaluate_on_split(task=evaluated_task, batch_size=self.batch_size * 2,
                                        current_task_index=task.index,
                                        split=DatasetSplits.TEST)
