@@ -5,11 +5,11 @@ from copy import deepcopy
 
 import torch
 
-from continual_learning.methods import BaseMethod
-from continual_learning.scenarios.base import SupervisedTask
+from continual_learning.methods.MultiTask.base import BaseMultiTaskMethod
+from continual_learning.scenarios.tasks import SupervisedTask
 
 
-class ElasticWeightConsolidation(BaseMethod):
+class ElasticWeightConsolidation(BaseMultiTaskMethod):
     """
     @article{kirkpatrick2017overcoming,
       title={Overcoming catastrophic forgetting in neural networks},

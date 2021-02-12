@@ -1,14 +1,14 @@
 from torch import nn
 from torch.nn import BatchNorm2d
 
+from continual_learning.methods.MultiTask.base import BaseMultiTaskMethod
 from continual_learning.methods.MultiTask.batch_ensemble.base import BElayer
-from continual_learning.methods.base import BaseMethod
-from continual_learning.scenarios.base import SupervisedTask
+from continual_learning.scenarios.tasks import SupervisedTask
 from continual_learning.solvers.base import Solver
 from continual_learning.solvers.multi_task import MultiHeadsSolver
 
 
-class BatchEnsemble(BaseMethod):
+class BatchEnsemble(BaseMultiTaskMethod):
     """
     @misc{wen2020batchensemble,
     title={BatchEnsemble: An Alternative Approach to Efficient Ensemble and Lifelong Learning},

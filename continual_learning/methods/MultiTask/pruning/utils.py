@@ -4,7 +4,7 @@ import numpy as np
 import torch
 from torch import nn
 
-from continual_learning.scenarios.base import SupervisedTask
+from continual_learning.scenarios.tasks import SupervisedTask
 
 
 def get_accuracy(encoder: torch.nn.Module, solver: torch.nn.Module,

@@ -5,13 +5,13 @@ import torch
 from torch import nn
 from torch.nn import BatchNorm2d
 
+from continual_learning.methods.MultiTask.base import BaseMultiTaskMethod
 from continual_learning.methods.MultiTask.pruning.utils import PrunedLayer, get_accuracy
-from continual_learning.methods.base import BaseMethod
-from continual_learning.scenarios.base import SupervisedTask
+from continual_learning.scenarios.tasks import SupervisedTask
 from continual_learning.solvers.base import Solver
 
 
-class Pruning(BaseMethod):
+class Pruning(BaseMultiTaskMethod):
     """
     @misc{golkar2019continual,
         title={Continual Learning via Neural Pruning},

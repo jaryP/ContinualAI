@@ -24,6 +24,7 @@ class ForwardHook:
 
 def get_masks_from_gradients(gradients, prune_percentage, global_pruning, past_masks=None,
                              hard_pruning: bool = True, device='cpu'):
+    masks = {}
     if past_masks is None:
         past_masks = {}
 
@@ -44,14 +45,18 @@ def get_masks_from_gradients(gradients, prune_percentage, global_pruning, past_m
         # stacked_grads = np.concatenate([gs.view(-1).numpy() for name, gs in gradients.items()])
         stacked_grads = np.concatenate(grads)
         grads_sum = np.sum(stacked_grads)
-        stacked_grads = stacked_grads / grads_sum
+        stacked_grads_normalized = stacked_grads / grads_sum
+        threshold = np.quantile(stacked_grads_normalized, q=prune_percentage)
 
-        threshold = np.quantile(stacked_grads, q=prune_percentage)
+        # masks = {name: torch.ge(gs / grads_sum, threshold).float().to(device)
+        #          for name, gs in gradients.items()}
+        for name, gs in gradients.items():
+            # if hard_pruning and name in past_masks:
+            #     gs = gs * past_masks[name]
+            mask = torch.ge(gs / grads_sum, threshold).float().to(device)
+            masks[name] = mask
 
-        masks = {name: torch.ge(gs / grads_sum, threshold).float().to(device)
-                 for name, gs in gradients.items()}
     else:
-        masks = {}
         for name, gs in gradients.items():
             if name not in past_masks:
                 thres = torch.quantile(gs.view(-1), prune_percentage)
@@ -62,10 +67,9 @@ def get_masks_from_gradients(gradients, prune_percentage, global_pruning, past_m
                 else:
                     thres = torch.quantile(masked, prune_percentage)
 
+            # if hard_pruning and name in past_masks:
+            #     gs = gs * past_masks[name]
             mask = torch.ge(gs, thres).float().to(device)
-            if hard_pruning:
-                if name in past_masks:
-                    mask *= past_masks[name]
             masks[name] = mask
 
         # masks = {name: torch.ge(gs, torch.quantile(gs, prune_percentage)).float().to(device)

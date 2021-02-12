@@ -1,14 +1,14 @@
 import torch
 from torch import nn
 
-from continual_learning.methods import BaseMethod
+from continual_learning.methods.MultiTask.base import BaseMultiTaskMethod
 from continual_learning.methods.MultiTask.piggyback.base import PiggyBackLayer, ForwardHook
-from continual_learning.scenarios.base import SupervisedTask
+from continual_learning.scenarios.tasks import SupervisedTask
 from continual_learning.solvers.base import Solver
 from continual_learning.solvers.multi_task import MultiHeadsSolver
 
 
-class PiggyBack(BaseMethod):
+class PiggyBack(BaseMultiTaskMethod):
     def __init__(self, backbone: nn.Module, threshold=5e-3, device='cpu'):
         super().__init__()
         self.apply_wrapper_to_model(backbone)

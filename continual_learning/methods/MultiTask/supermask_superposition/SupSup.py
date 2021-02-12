@@ -1,25 +1,11 @@
-# def apply_wrapper_to_model(self, model):
-#     for name, module in model.named_children():
-#
-#         if isinstance(module, (nn.Linear, nn.Conv2d)):
-#             l = getattr(model, name)
-#             setattr(model, name, BElayer(l))
-#         self.apply_wrapper_to_model(module)
-#
-#     # for name, module in model.named_modules():
-#     #     if isinstance(module, (nn.Linear, nn.Conv2d)):
-#     #         l = getattr(model, name)
-#     #         setattr(model, name, BElayer(l))
-
-
 from torch import nn
 
+from continual_learning.methods.MultiTask.base import BaseMultiTaskMethod
 from continual_learning.methods.MultiTask.supermask_superposition.base import SupSupMaskWrapper
-from continual_learning.methods.base import BaseMethod
-from continual_learning.scenarios.base import SupervisedTask
+from continual_learning.scenarios.tasks import SupervisedTask
 
 
-class SupermaskSuperposition(BaseMethod):
+class SupermaskSuperposition(BaseMultiTaskMethod):
     """
     @misc{wen2020batchensemble,
     title={BatchEnsemble: An Alternative Approach to Efficient Ensemble and Lifelong Learning},

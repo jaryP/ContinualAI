@@ -1,4 +1,3 @@
-import logging
 import numpy as np
 
 from typing import Union
@@ -7,11 +6,12 @@ import torch
 
 import torch.nn.functional as F
 
+from continual_learning.methods.MultiTask.base import BaseMultiTaskMethod
 from continual_learning.methods.base import BaseMethod
-from continual_learning.scenarios.base import SupervisedTask
+from continual_learning.scenarios.tasks import SupervisedTask
 
 
-class EmbeddingRegularization(BaseMethod):
+class EmbeddingRegularization(BaseMultiTaskMethod):
     """
     @article{POMPONI2020,
     title = "Efficient continual learning in neural networks with embedding regularization",

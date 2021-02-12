@@ -29,6 +29,12 @@ class BaseMethod(ABC, torch.nn.Module):
     def __init__(self):
         super().__init__()
 
+    def set_up(self):
+        pass
+
+    def preprocess_dataset(self):
+        pass
+
     def get_parameters(self, task, backbone: nn.Module, solver: Solver):
         task_i = task.index
         parameters = []
@@ -56,6 +62,9 @@ class BaseMethod(ABC, torch.nn.Module):
         pass
 
     def on_batch_starts(self, backbone, solver, task, *args, **kwargs):
+        pass
+
+    def on_batch_ends(self, backbone, solver, task, *args, **kwargs):
         pass
 
     def after_optimization_step(self, backbone, solver, task, *args, **kwargs):
