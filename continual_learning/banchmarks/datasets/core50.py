@@ -44,8 +44,9 @@ class Core50_128(SupervisedDownloadableDataset):
     def __init__(self, download_if_missing: bool = True, data_folder: str = None,
                  transformer: Callable = None, test_transformer: Callable = None, target_transformer: Callable = None,
                  scenario='nc'):
+
         self.scenario = scenario
-        self.n_batches = 8
+        self.n_batches = self.nbatch[scenario]
 
         super().__init__(name='CORE50_128', download_if_missing=download_if_missing, data_folder=data_folder,
                          transformer=transformer, target_transformer=target_transformer, is_path_dataset=True,

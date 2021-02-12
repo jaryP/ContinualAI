@@ -1,1 +1,1 @@
-from .base import BaseMethod
+from .base import BaseMethod, Naive

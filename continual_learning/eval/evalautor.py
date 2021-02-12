@@ -6,7 +6,8 @@ from itertools import chain
 import numpy as np
 from typing import List, Union
 
-from .metrics.base import ClassificationMetric, ContinualLearningMetric, Metric
+from continual_learning.banchmarks import DatasetSplits
+from continual_learning.eval.metrics import Metric, ClassificationMetric, ContinualLearningMetric
 
 
 def default_to_regular(d):
@@ -16,40 +17,49 @@ def default_to_regular(d):
 
 
 class Evaluator:
-    def __init__(self, classification_metrics: Union[List[ClassificationMetric], ClassificationMetric] = None,
-                 cl_metrics: Union[List[ContinualLearningMetric], ContinualLearningMetric] = None,
-                 other_metrics: Union[List[Metric], Metric] = None):
+    # def __init__(self, classification_metrics: Union[List[ClassificationMetric], ClassificationMetric] = None,
+    #              cl_metrics: Union[List[ContinualLearningMetric], ContinualLearningMetric] = None,
+    #              other_metrics: Union[List[Metric], Metric] = None):
+    def __init__(self, classification_metrics: Union[List[Metric], Metric] = None):
 
-        self._task_times = defaultdict(list)
         self._classification_metrics = []
         self._cl_metrics = []
         self._others_metrics = []
 
+        self._scores = {split: {} for split in DatasetSplits}
+        self._labels = {}
         self._r = dict()
 
-        self._scores = defaultdict(lambda: defaultdict(list))
+        # self._scores = defaultdict(lambda: defaultdict(list))
 
-        self._scores = dict()
+        if isinstance(classification_metrics, Metric):
+            classification_metrics = [classification_metrics]
 
-        self._labels = {}
+        for metric in classification_metrics:
+            if isinstance(metric, ClassificationMetric):
+                self._classification_metrics.append((metric.__class__.__name__, metric))
+            elif isinstance(metric, ContinualLearningMetric):
+                self._cl_metrics.append((metric.__class__.__name__, metric))
+            elif isinstance(metric, Metric):
+                self._others_metrics.append((metric.__class__.__name__, metric))
 
-        if classification_metrics is not None:
-            if isinstance(classification_metrics, ClassificationMetric):
-                classification_metrics = [classification_metrics]
+        # if classification_metrics is not None:
+        #     if isinstance(classification_metrics, ClassificationMetric):
+        #         classification_metrics = [classification_metrics]
+        #
+        #     self._classification_metrics = [(i.__class__.__name__, i) for i in classification_metrics]
+        #
+        # if cl_metrics is not None:
+        #     if isinstance(cl_metrics, ContinualLearningMetric):
+        #         cl_metrics = [cl_metrics]
+        #
+        #     self._cl_metrics = [(i.__class__.__name__, i) for i in cl_metrics]
+        #
+        # if other_metrics is not None:
+        #     if isinstance(other_metrics, Metric):
+        #         other_metrics = [other_metrics]
 
-            self._classification_metrics = [(i.__class__.__name__, i) for i in classification_metrics]
-
-        if cl_metrics is not None:
-            if isinstance(cl_metrics, ContinualLearningMetric):
-                cl_metrics = [cl_metrics]
-
-            self._cl_metrics = [(i.__class__.__name__, i) for i in cl_metrics]
-
-        if other_metrics is not None:
-            if isinstance(other_metrics, Metric):
-                other_metrics = [other_metrics]
-
-            self._others_metrics = [(i.__class__.__name__, i) for i in other_metrics]
+        # self._others_metrics = [(i.__class__.__name__, i) for i in other_metrics]
 
     @property
     def task_matrix(self) -> dict:
@@ -105,21 +115,24 @@ class Evaluator:
         return [name for name, _ in self._others_metrics]
 
     def evaluate(self, y_true: Union[list, np.ndarray], y_pred: Union[list, np.ndarray],
-                 current_task: int, evaluated_task: int):
+                 current_task: int, evaluated_task: int, evaluated_split: DatasetSplits):
 
         if current_task not in self._labels:
             self._labels[evaluated_task] = set(y_true)
         mx = max(current_task, evaluated_task) + 1
 
         scores = {}
+
         for name, m in self._classification_metrics:
 
             _m = m(y_true, y_pred, evaluator=self)
 
-            _s = self._scores.get(name, defaultdict(lambda: defaultdict(list)))
+            split_scores = self._scores.get(evaluated_split, {})
+            _s = split_scores.get(name, defaultdict(lambda: defaultdict(list)))
 
             _s[evaluated_task][current_task].append(_m)
-            self._scores[name] = _s
+
+            self._scores[evaluated_split][name] = _s
             scores[name] = _m
 
             r = self._r.get(name, None)

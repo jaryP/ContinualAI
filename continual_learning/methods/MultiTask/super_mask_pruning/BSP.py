@@ -4,15 +4,15 @@ from collections import defaultdict
 import torch
 from torch import nn
 
+from continual_learning.methods.MultiTask.base import BaseMultiTaskMethod
 from continual_learning.methods.MultiTask.super_mask_pruning.base.utils import mask_training, get_masks_from_gradients, \
     ForwardHook
 from continual_learning.methods.MultiTask.super_mask_pruning.base.layer import EnsembleMaskedWrapper
-from continual_learning.methods.base import BaseMethod
-from continual_learning.scenarios.base import SupervisedTask
+from continual_learning.scenarios.tasks import SupervisedTask
 from continual_learning.solvers.multi_task import MultiHeadsSolver
 
 
-class SuperMask(BaseMethod):
+class SuperMask(BaseMultiTaskMethod):
     def __init__(self, mask_epochs=5, global_pruning=False, hard_pruning: bool = True,
                  mask_parameters: dict = None, pruning_percentage=0.5, device='cpu'):
         super().__init__()
@@ -139,13 +139,13 @@ class SuperMask(BaseMethod):
         f = lambda x: torch.mean(x, 0)
 
         ens_grads = {}
-        old_grads = {}
+        past_masks = {}
 
         for name, gs in grads.items():
             g = f(torch.stack(gs, 0))
             _masks = self._get_mask_for_task(task_i=task_i, name=name, invert_masks=True)
             if _masks is not None:
-                old_grads[name] = _masks
+                past_masks[name] = _masks
             ens_grads[name] = g
 
         # ens_grads = {name: f(torch.stack(gs, 0)).detach().cpu() for name, gs in grads.items()}
@@ -153,8 +153,16 @@ class SuperMask(BaseMethod):
         # _masks = self._get_mask_for_task(task_i)
 
         masks = get_masks_from_gradients(gradients=ens_grads, prune_percentage=self.pruning,
-                                         global_pruning=self.global_pruning, past_masks=old_grads,
+                                         global_pruning=self.global_pruning,
+                                         past_masks=past_masks if self.hard_pruning else None,
                                          device=self.device)
+
+        if len(past_masks) > 0:
+            for name, mask in masks.items():
+                if name in past_masks:
+                    masks[name] = mask * past_masks[name]
+
+        #     gs = gs * past_masks[name]
 
         for name, m in masks.items():
             # ms = self.tasks_masks.get(name, [])

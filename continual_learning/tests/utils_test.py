@@ -38,18 +38,25 @@ class datasets_concatenation_tests(unittest.TestCase):
         self.assertTrue(i + 1 == 20000)
 
     def test_dataloader(self):
+        def modify_dataset(d):
+            dataset2 = self.dataset_class(download_if_missing=True, data_folder=self.data_folder)
+            d = ConcatDataset([d, dataset2])
+
         dataset1 = self.dataset_class(download_if_missing=True, data_folder=self.data_folder)
-        dataset2 = self.dataset_class(download_if_missing=True, data_folder=self.data_folder)
-        cd = ConcatDataset([dataset2, dataset1])
-
-        cd.train()
-        i = 0
-        for j, _, _ in cd.get_iterator(128):
-            i += len(j)
-        self.assertTrue(i == 120000)
-
-        cd.test()
-        i = 0
-        for j, _, _ in cd.get_iterator(128):
-            i += len(j)
-        self.assertTrue(i == 20000)
+        # dataset2 = self.dataset_class(download_if_missing=True, data_folder=self.data_folder)
+        # cd = ConcatDataset([dataset2, dataset1])
+        print(len(dataset1))
+        modify_dataset(dataset1)
+        print(len(dataset1))
+        
+        # cd.train()
+        # i = 0
+        # for j, _, _ in cd.get_iterator(128):
+        #     i += len(j)
+        # self.assertTrue(i == 120000)
+        #
+        # cd.test()
+        # i = 0
+        # for j, _, _ in cd.get_iterator(128):
+        #     i += len(j)
+        # self.assertTrue(i == 20000)

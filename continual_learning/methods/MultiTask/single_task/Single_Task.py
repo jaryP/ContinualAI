@@ -2,11 +2,11 @@ from copy import deepcopy
 
 from torch import nn
 
-from continual_learning.methods import BaseMethod
-from continual_learning.scenarios.base import SupervisedTask
+from continual_learning.methods.MultiTask.base import BaseMultiTaskMethod
+from continual_learning.scenarios.tasks import SupervisedTask
 
 
-class SingleTask(BaseMethod):
+class SingleTask(BaseMultiTaskMethod):
     def __init__(self, **kwargs):
         super().__init__()
         self.tasks_dict = {}

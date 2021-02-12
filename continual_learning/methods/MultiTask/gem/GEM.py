@@ -7,12 +7,12 @@ import numpy as np
 import torch
 from torch import nn
 
-from continual_learning.methods import BaseMethod
+from continual_learning.methods.MultiTask.base import BaseMultiTaskMethod
 from continual_learning.methods.MultiTask.gem.utils import qp
-from continual_learning.scenarios.base import SupervisedTask
+from continual_learning.scenarios.tasks import SupervisedTask
 
 
-class GradientEpisodicMemory(BaseMethod):
+class GradientEpisodicMemory(BaseMultiTaskMethod):
     """
     @inproceedings{lopez2017gradient,
       title={Gradient episodic memory for continual learning},
