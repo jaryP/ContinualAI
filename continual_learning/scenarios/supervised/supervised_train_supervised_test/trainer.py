@@ -9,7 +9,7 @@ import numpy as np
 
 from continual_learning.eval import Evaluator
 from continual_learning.eval.metrics import Metric
-from continual_learning.methods.MultiTask.base import BaseMultiTaskMethod, Naive
+from continual_learning.methods.MultiTask.base import BaseMultiTaskMethod
 from continual_learning.scenarios.base import AbstractTrainer
 from continual_learning.scenarios.supervised.supervised_train_supervised_test import MultiTask
 from continual_learning.scenarios.tasks import SupervisedTask
@@ -86,12 +86,11 @@ class Trainer(AbstractTrainer):
             batch_size = self.batch_size
 
         task_index = task.index
+        self.solver.task = task_index
 
         task.train()
 
         self.method.on_epoch_starts(backbone=self.backbone, solver=self.solver, task=task)
-
-        self.solver.task = task_index
 
         self.method.set_task(backbone=self.backbone, solver=self.solver, task=task)
 
@@ -188,18 +187,26 @@ class Trainer(AbstractTrainer):
             optimizer = self.optimizer
 
         for e in range(self.epochs):
+            print(e)
+
             self.evaluator.on_epoch_starts()
+
             task.train()
+
             losses, model_state_dict, solver_state_dict = self.train_epoch(task,
                                                                            optimizer=optimizer,
                                                                            batch_size=self.batch_size)
             self.evaluator.on_epoch_ends()
 
-            self.evaluate_on_split(task=task, batch_size=self.batch_size*2, current_task_index=task.index,
-                                   split=DatasetSplits.TRAIN)
+            train_scores = self.evaluate_on_split(task=task, batch_size=self.batch_size * 2,
+                                                  current_task_index=task.index,
+                                                  split=DatasetSplits.TRAIN)
 
-            self.evaluate_on_split(task=task, batch_size=self.batch_size*2, current_task_index=task.index,
-                                   split=DatasetSplits.DEV)
+            dev_scores = self.evaluate_on_split(task=task, batch_size=self.batch_size * 2,
+                                                current_task_index=task.index,
+                                                split=DatasetSplits.DEV)
+
+            print(train_scores, dev_scores)
 
         self.method.on_task_ends(backbone=self.backbone, solver=self.solver, task=task)
 
@@ -226,7 +233,6 @@ class Trainer(AbstractTrainer):
                 self.evaluate_on_split(task=evaluated_task, batch_size=self.batch_size * 2,
                                        current_task_index=task.index,
                                        split=DatasetSplits.TEST)
-
 
 # if __name__ == '__main__':
 #     import numpy as np

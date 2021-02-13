@@ -67,8 +67,8 @@ def extract_dev(y: Union[list,  np.ndarray], dev_split: float = 0.1, random_stat
 
     _dev_split = int(len(index_list) * dev_split)
 
-    train = index_list[_dev_split:]
-    dev = index_list[:_dev_split]
+    train = y[_dev_split:]
+    dev = y[:_dev_split]
 
     return train, dev
 

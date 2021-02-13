@@ -43,7 +43,7 @@ class Core50_128(SupervisedDownloadableDataset):
 
     def __init__(self, download_if_missing: bool = True, data_folder: str = None,
                  transformer: Callable = None, test_transformer: Callable = None, target_transformer: Callable = None,
-                 scenario='nc'):
+                 scenario='ni'):
 
         self.scenario = scenario
         self.n_batches = self.nbatch[scenario]
