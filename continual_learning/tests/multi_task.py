@@ -4,7 +4,7 @@ import unittest
 import torchvision
 from torch import nn
 
-from continual_learning.banchmarks import MNIST, DatasetSplits
+from continual_learning.benchmarks import MNIST, DatasetSplits
 from continual_learning.scenarios.supervised.supervised_train_supervised_test.multi_task import MultiTask
 
 

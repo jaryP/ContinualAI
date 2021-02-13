@@ -4,7 +4,7 @@ from typing import Union, List, Sequence
 import numpy as np
 import torch
 
-from continual_learning.banchmarks.base import IndexesContainer, SupervisedDataset
+from continual_learning.benchmarks.base import IndexesContainer, SupervisedDataset
 from continual_learning.scenarios.tasks import Task, SupervisedTask
 
 

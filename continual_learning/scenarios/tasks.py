@@ -3,8 +3,8 @@ from typing import Union
 import numpy as np
 from torch.utils.data import DataLoader
 
-from continual_learning.banchmarks import DatasetSplits, SupervisedDataset
-from continual_learning.banchmarks.base import IndexesContainer
+from continual_learning.benchmarks import DatasetSplits, SupervisedDataset
+from continual_learning.benchmarks.base import IndexesContainer
 
 
 class Task(IndexesContainer):
@@ -37,7 +37,7 @@ class SupervisedTask(Task):
         super().__init__(index=index, base_dataset=base_dataset, train=train, dev=dev, test=test, **kwargs)
         self._task_labels = True
         self.labels_mapping = labels_mapping
-        self.current_split = DatasetSplits.TRAIN
+        # self.current_split = DatasetSplits.TRAIN
 
     def set_task_labels(self):
         self._task_labels = True
