@@ -15,7 +15,7 @@ class SingleIncrementalTask(IncrementalProblem):
                        random_state: Union[np.random.RandomState, int] = None) -> List[SupervisedTask]:
 
         labels = dataset.labels
-        labels_sets = get_labels_set(labels, labels_per_task=labels_per_task, shuffle_labels=shuffle_labels,
+        labels_sets = get_labels_set(labels, labels_per_set=labels_per_task, shuffle_labels=shuffle_labels,
                                      random_state=random_state)
 
         labels_map = np.zeros(len(labels), dtype=int)

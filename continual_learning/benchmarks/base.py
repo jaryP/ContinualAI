@@ -83,7 +83,7 @@ class IndexesContainer(object):
         self.current_split = DatasetSplits.ALL
 
 
-class UnsupervisedDataset(IndexesContainer, Dataset):
+class UnsupervisedDataset(IndexesContainer):
     # """
     # This class contains all the functions to operate with an unsupervised dataset
     # (a dataset which does not contains labels).
@@ -155,7 +155,7 @@ class UnsupervisedDataset(IndexesContainer, Dataset):
         if self.is_path_dataset:
             # TODO: implement the case in which item is instance of list or slice
             # img = Image.open(os.path.join(self.images_path, self._x[item]))
-            img = Image.open(self._x[item])
+            img = Image.open(self._x[self.current_indexes[item]])
             img = img.convert('RGB')
             # img = np.asarray(img)
             return item, self._transformer(img)
@@ -248,13 +248,16 @@ class UnsupervisedDataset(IndexesContainer, Dataset):
         """
         assert dev_split >= 0
 
-        _train_split, _dev_split = extract_dev(y=self.get_indexes(DatasetSplits.TRAIN), dev_split=dev_split,
+        _train_split, _dev_split = extract_dev(y=self.get_indexes(DatasetSplits.
+                                                                  TRAIN),
+                                               dev_split=dev_split,
                                                random_state=random_state)
 
         self._splits = \
             {
                 DatasetSplits.TRAIN: np.asarray(_train_split, dtype=int),
-                DatasetSplits.TEST: np.asarray(self.get_indexes(DatasetSplits.TEST), dtype=int),
+                DatasetSplits.TEST: np.asarray(
+                    self.get_indexes(DatasetSplits.TEST), dtype=int),
                 DatasetSplits.DEV: np.asarray(_dev_split, dtype=int),
             }
 

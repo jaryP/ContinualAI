@@ -1,4 +1,6 @@
 import os
+from collections import defaultdict
+from operator import add
 from os.path import exists
 from typing import Callable, Tuple
 from zipfile import ZipFile
@@ -40,9 +42,15 @@ class TinyImagenet(SupervisedDownloadableDataset):
     def load_dataset(self) -> Tuple[Tuple[np.ndarray, np.ndarray],
                                     Tuple[list, list, list]]:
 
-        labels_map = {}
         name = self.url.rpartition('/')[2]
         name = os.path.splitext(name)[0]
+
+        val_images = os.path.join(self.data_folder,
+                                  name, 'val', 'images')
+        val_classes = os.path.join(self.data_folder,
+                                   name, 'val', 'val_annotations.txt')
+
+        labels_map = {}
 
         labels = set()
         with open(os.path.join(self.data_folder, name, 'wnids.txt'), 'r') as f:
@@ -66,30 +74,30 @@ class TinyImagenet(SupervisedDownloadableDataset):
             x.extend(img_paths)
             y.extend([i] * len(img_paths))
 
-        train_idx = list(range(len(x)))
-
-        val_images = os.path.join(self.data_folder,
-                                  name, 'val', 'images')
-        val_classes = os.path.join(self.data_folder,
-                                   name, 'val', 'val_annotations.txt')
+            # test_x = test_paths[c]
+            # x_test.extend(test_x)
+            # y_test.extend([i] * len(test_x))
 
         x_test = []
         y_test = []
 
+        test_paths = defaultdict(list)
         with open(val_classes, 'r') as f:
             for line in f:
                 img, c, _, _, _, _ = line.strip().split()
+                test_paths[c].append(os.path.join(val_images, img))
                 if c in labels_map:
                     x_test.append(os.path.join(val_images, img))
                     y_test.append(labels_map[c])
 
-        test_idx = list(range(len(train_idx), len(train_idx)+len(x_test)))
+        train_idx = list(range(len(x)))
+        test_idx = list(map(lambda x: x + len(train_idx), range(len(x_test))))
 
-        x = x + x_test
-        y = y + y_test
+        x.extend(x_test)
+        y.extend(y_test)
 
         x = np.asarray(x)
-        y = np.asarray(y)
+        y = np.asarray(y, dtype=int)
 
         return (x, y), (train_idx, test_idx, [])
 
