@@ -146,23 +146,10 @@ class UnsupervisedDataset(IndexesContainer):
         :param item: The index, or more than one, used to fetch the samples in the dataset.
         :return: Return :param item: and the associated samples, modified by the transformer function.
         """
-        # We do not want to index if we need to use all the datasets
-        # if self.current_split != DatasetSplits.ALL:
-        #     f = lambda x, i: x[self.current_indexes[i]]
-        # else:
-        #     f = lambda x, i: x
+        to_map = False
 
-        if self.is_path_dataset:
-            # TODO: implement the case in which item is instance of list or slice
-            # img = Image.open(os.path.join(self.images_path, self._x[item]))
-            img = Image.open(self._x[self.current_indexes[item]])
-            img = img.convert('RGB')
-            # img = np.asarray(img)
-            return item, self._transformer(img)
-        else:
-            if isinstance(item, (np.integer, int)):
-                return item, self._get_transformer()(self._x[self.current_indexes[item]])
-
+        if not isinstance(item, (np.integer, int)):
+            to_map = True
             if isinstance(item, slice):
                 s = item.start if item.start is not None else 0
                 e = item.stop
@@ -171,9 +158,41 @@ class UnsupervisedDataset(IndexesContainer):
             elif isinstance(item, tuple):
                 item = list(item)
 
-            a = list(map(self._get_transformer(), self._x[self.current_indexes[item]]))
+        idxs = self.current_indexes[item]
 
-            return item, a
+        if self.is_path_dataset:
+            # TODO: implement the case in which item is instance of list or slice
+            # img = Image.open(os.path.join(self.images_path, self._x[item]))
+            if to_map:
+                x = [Image.open(self._x[i]).convert('RGB') for i in idxs]
+            else:
+                x = Image.open(self._x[idxs]).convert('RGB')
+            # img = Image.open(self._x[self.current_indexes[item]])
+            # img = img.convert('RGB')
+            # img = np.asarray(img)
+            # return item, self._transformer(img)
+        else:
+            x = self._x[idxs]
+
+            # if isinstance(item, (np.integer, int)):
+            #     return item, self._get_transformer()(self._x[self.current_indexes[item]])
+            #
+            # if isinstance(item, slice):
+            #     s = item.start if item.start is not None else 0
+            #     e = item.stop
+            #     step = item.step if item.step is not None else 1
+            #     item = list(range(s, e, step))
+            # elif isinstance(item, tuple):
+            #     item = list(item)
+            #
+            # a = list(map(self._get_transformer(), self._x[self.current_indexes[item]]))
+
+        if to_map:
+            x = list(map(self._get_transformer(), x))
+        else:
+            x = self._get_transformer()(x)
+
+        return item, x
 
     def get_iterator(self, batch_size, shuffle=True, sampler=None, num_workers=0, pin_memory=False):
         return DataLoader(self, batch_size=batch_size, shuffle=shuffle,
