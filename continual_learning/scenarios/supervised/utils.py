@@ -1,10 +1,14 @@
-from typing import Union
+from typing import Union, List
 
 import numpy as np
 
 
-def get_labels_set(labels: Union[tuple, list, np.ndarray], labels_per_task: int, shuffle_labels: bool = False,
-                   random_state: Union[np.random.RandomState, int] = None):
+def get_labels_set(labels: Union[tuple, list, np.ndarray],
+                   labels_per_set: int,
+                   shuffle_labels: bool = False,
+                   random_state: Union[np.random.RandomState, int] = None
+                   ) -> List[List[int]]:
+
     if shuffle_labels:
         if random_state is not None:
             if isinstance(random_state, int):
@@ -13,10 +17,7 @@ def get_labels_set(labels: Union[tuple, list, np.ndarray], labels_per_task: int,
         else:
             np.random.shuffle(labels)
 
-    labels_sets = [list(labels[i:i + labels_per_task]) for i in range(0, len(labels), labels_per_task)]
+    labels_sets = [list(labels[i:i + labels_per_set])
+                   for i in range(0, len(labels), labels_per_set)]
 
-    if len(labels_sets[-1]) == 1:
-        labels_sets[-2].extend(labels_sets[-1])
-        labels_sets = labels_sets[:-1]
-
-    return np.asarray(labels_sets)
+    return labels_sets

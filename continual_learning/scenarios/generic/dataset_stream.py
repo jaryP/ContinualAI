@@ -3,7 +3,7 @@ from typing import Union, List
 
 import numpy as np
 
-from continual_learning.banchmarks.base import IndexesContainer
+from continual_learning.benchmarks.base import IndexesContainer
 from continual_learning.scenarios.base import StreamProblem
 
 

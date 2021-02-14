@@ -4,7 +4,6 @@ import torch
 from torch import nn
 
 from continual_learning.solvers.base import Solver
-from continual_learning.solvers.multi_task import MultiHeadsSolver
 
 
 class Container(object):
@@ -32,15 +31,12 @@ class BaseMethod(ABC, torch.nn.Module):
     def set_up(self):
         pass
 
-    def preprocess_dataset(self):
+    def preprocess_dataset(self, task, backbone: nn.Module, solver: Solver,  **kwargs):
         pass
 
-    def get_parameters(self, task, backbone: nn.Module, solver: Solver):
-        task_i = task.index
+    def get_parameters(self, task, backbone: nn.Module, solver: Solver,  **kwargs):
         parameters = []
         parameters.extend(backbone.parameters())
-        if isinstance(solver, MultiHeadsSolver):
-            parameters.extend(solver.heads[task_i].parameters())
         return parameters
 
     def set_task(self, backbone, solver, task,  **kwargs):

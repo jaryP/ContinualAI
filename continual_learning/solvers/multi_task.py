@@ -56,17 +56,17 @@ class MultiHeadsSolver(Solver):
     def task(self):
         return self._task
 
-    def task_parameters(self, t=None, recuse=True):
-        if t is None:
-            t = self.task
-        th = self.heads[t]
+    def get_parameters(self, task=None, recuse=True):
+        if task is None:
+            task = self.task
+        th = self.heads[task]
         for param in th.parameters(recurse=recuse):
             yield param
 
-    def parameters(self, t=None, recuse=True):
-        for h in self.heads:
-            for param in h.parameters(recurse=recuse):
-                yield param
+    # def parameters(self, t=None, recuse=True):
+    #     for h in self.heads:
+    #         for param in h.parameters(recurse=recuse):
+    #             yield param
 
     @property
     def heads(self):

@@ -3,13 +3,20 @@ from typing import Union
 import numpy as np
 from torch.utils.data import DataLoader
 
-from continual_learning.banchmarks import DatasetSplits, SupervisedDataset
-from continual_learning.banchmarks.base import IndexesContainer
+from continual_learning.benchmarks import DatasetSplits, SupervisedDataset
+from continual_learning.benchmarks.base import IndexesContainer, \
+    UnsupervisedDataset
 
 
 class Task(IndexesContainer):
-    def __init__(self, *, index: int, base_dataset, train: Union[list, np.ndarray], test: [list, np.ndarray] = None,
-                 dev: [list, np.ndarray] = None, **kwargs):
+    def __init__(self,
+                 *,
+                 base_dataset: UnsupervisedDataset,
+                 index: int,
+                 train: Union[list, np.ndarray],
+                 test: [list, np.ndarray] = None,
+                 dev: [list, np.ndarray] = None,
+                 **kwargs):
         super().__init__(train=train, dev=dev, test=test, **kwargs)
         self.base_dataset = base_dataset
         self.index = index
@@ -24,20 +31,41 @@ class Task(IndexesContainer):
         self._current_split = v
         self.base_dataset.current_split = v
 
-    def get_iterator(self, batch_size, shuffle=True, sampler=None, num_workers=0, pin_memory=False):
-        return DataLoader(self, batch_size=batch_size, shuffle=shuffle,
-                          sampler=sampler, pin_memory=pin_memory, num_workers=num_workers)
+    def get_iterator(self,
+                     batch_size: int,
+                     shuffle: bool = True,
+                     sampler=None,
+                     num_workers: int = 0,
+                     pin_memory: bool = False):
+
+        return DataLoader(self,
+                          batch_size=batch_size,
+                          shuffle=shuffle,
+                          sampler=sampler,
+                          pin_memory=pin_memory,
+                          num_workers=num_workers)
 
 
 class SupervisedTask(Task):
-    def __init__(self, *, index: int, base_dataset: SupervisedDataset, labels_mapping: dict,
-                 train: Union[list, np.ndarray], test: [list, np.ndarray] = None,
-                 dev: [list, np.ndarray] = None, **kwargs):
+    def __init__(self,
+                 *,
+                 base_dataset: SupervisedDataset,
+                 index: int,
+                 labels_mapping: dict,
+                 train: Union[list, np.ndarray],
+                 test: [list, np.ndarray] = None,
+                 dev: [list, np.ndarray] = None,
+                 **kwargs):
 
-        super().__init__(index=index, base_dataset=base_dataset, train=train, dev=dev, test=test, **kwargs)
+        super().__init__(index=index,
+                         base_dataset=base_dataset,
+                         train=train,
+                         dev=dev,
+                         test=test,
+                         **kwargs)
+
         self._task_labels = True
         self.labels_mapping = labels_mapping
-        self.current_split = DatasetSplits.TRAIN
 
     def set_task_labels(self):
         self._task_labels = True
