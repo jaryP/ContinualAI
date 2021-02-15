@@ -4,10 +4,10 @@ from typing import Union, List
 import numpy as np
 
 from continual_learning.benchmarks.base import IndexesContainer
-from continual_learning.scenarios.base import StreamProblem
+from continual_learning.scenarios.base import DomainIncremental
 
 
-class GenericDataStream(StreamProblem):
+class GenericDataStream(DomainIncremental):
     #TODO: Implementare test
     def __init__(self, dataset: Union[Sequence[IndexesContainer], IndexesContainer],
                  shuffle_datasets: bool = False, random_state: Union[np.random.RandomState, int] = None):
