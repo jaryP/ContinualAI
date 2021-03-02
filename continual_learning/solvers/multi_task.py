@@ -29,17 +29,6 @@ class MultiHeadsSolver(Solver):
         self.topology = topology
         self._task = 0
 
-    # def _get_head(self):
-    #     def _weights_init(m):
-    #         if isinstance(m, nn.Linear) or isinstance(m, nn.Conv2d):
-    #             init.kaiming_normal_(m.weight)
-    #
-    #     # if isinstance(self.base_head, nn.Module):
-    #     h = deepcopy(self.base_head)
-    #     h.apply(_weights_init)
-    #     # else:
-    #     return h
-
     def base_topology(self, ind, outd):
         return nn.Sequential(*[nn.Linear(ind, ind),
                                nn.Dropout(0.25),
@@ -62,11 +51,6 @@ class MultiHeadsSolver(Solver):
         th = self.heads[task]
         for param in th.parameters(recurse=recuse):
             yield param
-
-    # def parameters(self, t=None, recuse=True):
-    #     for h in self.heads:
-    #         for param in h.parameters(recurse=recuse):
-    #             yield param
 
     @property
     def heads(self):

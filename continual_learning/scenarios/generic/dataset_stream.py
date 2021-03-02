@@ -9,8 +9,10 @@ from continual_learning.scenarios.base import DomainIncremental
 
 class GenericDataStream(DomainIncremental):
     #TODO: Implementare test
-    def __init__(self, dataset: Union[Sequence[IndexesContainer], IndexesContainer],
-                 shuffle_datasets: bool = False, random_state: Union[np.random.RandomState, int] = None):
+    def __init__(self,
+                 dataset: Union[Sequence[IndexesContainer], IndexesContainer],
+                 shuffle_datasets: bool = False,
+                 random_state: Union[np.random.RandomState, int] = None):
         super().__init__(dataset=dataset, shuffle_datasets=shuffle_datasets, random_state=random_state)
 
     def generate_tasks(self, dataset: Union[Sequence[IndexesContainer], IndexesContainer],
@@ -26,6 +28,7 @@ class GenericDataStream(DomainIncremental):
                                                                      'was given: {}'.format([type(d) for d in dataset])
             for d in dataset:
                 tasks.append(d)
+
             if shuffle_datasets:
                 random_state.shuffle(tasks)
 

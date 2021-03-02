@@ -9,11 +9,12 @@ from continual_learning.scenarios.supervised.utils import get_labels_set
 
 
 class MultiTask(IncrementalSupervisedProblem):
-    def generate_tasks(self, dataset: SupervisedDataset,
+    def generate_tasks(self,
+                       dataset: SupervisedDataset,
                        labels_per_task: int,
                        shuffle_labels: bool = False,
-                       random_state: Union[np.random.RandomState, int] = None) \
-            -> List[SupervisedTask]:
+                       random_state: Union[np.random.RandomState, int] = None,
+                       **kwargs) -> List[SupervisedTask]:
 
         if labels_per_task <= 1:
             raise ValueError('Parameter labels_per_task must be > 1 '

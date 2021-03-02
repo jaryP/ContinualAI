@@ -84,11 +84,12 @@ class SupervisedTask(Task):
         if self.labels_mapping is None:
             return y
 
-        if not isinstance(y, list):
-            return self.labels_mapping[y]
-
         if self._task_labels:
-            y = [self.labels_mapping[i] for i in y]
+            if not isinstance(y, list):
+                return self.labels_mapping[y]
+            else:
+            # if self._task_labels:
+                y = [self.labels_mapping[i] for i in y]
 
         return y
 
@@ -147,6 +148,7 @@ class SupervisedTransformerTask(SupervisedTask):
                  test: [list, np.ndarray] = None,
                  dev: [list, np.ndarray] = None,
                  **kwargs):
+
         super().__init__(base_dataset=base_dataset,
                          labels_mapping=labels_mapping,
                          train=train,
@@ -154,6 +156,7 @@ class SupervisedTransformerTask(SupervisedTask):
                          test=test,
                          index=index,
                          **kwargs)
+
         self.transformer = transformer
 
     def x(self, split: DatasetSplits = None):

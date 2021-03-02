@@ -22,8 +22,11 @@ class ForwardHook:
         self.mask = mask
 
 
-def get_masks_from_gradients(gradients, prune_percentage, global_pruning, past_masks=None,
-                             hard_pruning: bool = True, device='cpu'):
+def get_masks_from_gradients(gradients,
+                             prune_percentage,
+                             global_pruning, past_masks=None,
+                             hard_pruning: bool = True,
+                             device='cpu'):
     masks = {}
     if past_masks is None:
         past_masks = {}
@@ -31,15 +34,17 @@ def get_masks_from_gradients(gradients, prune_percentage, global_pruning, past_m
     if global_pruning:
         grads = []
         for name, g in gradients.items():
-            if name in past_masks:
+            if name in past_masks and hard_pruning:
                 # g = g.view(-1).numpy()
-                g = torch.masked_select(g.view(-1), past_masks[name].view(-1).bool())
+                g = torch.masked_select(g.view(-1),
+                                        past_masks[name].view(-1).bool())
                 # m = past_masks[name]
                 # gradients[name] *= m
                 # m = m.view(-1).numpy()
                 # g = g[m.astype(np.bool)]
-                grads.append(g.numpy())
-            else:
+                # grads.append(g.numpy())
+            # else:
+            if len(g) > 0:
                 grads.append(g.view(-1).numpy())
 
         # stacked_grads = np.concatenate([gs.view(-1).numpy() for name, gs in gradients.items()])
@@ -57,15 +62,19 @@ def get_masks_from_gradients(gradients, prune_percentage, global_pruning, past_m
             masks[name] = mask
 
     else:
+
         for name, gs in gradients.items():
-            if name not in past_masks:
-                thres = torch.quantile(gs.view(-1), prune_percentage)
-            else:
-                masked = torch.masked_select(gs.view(-1), past_masks[name].view(-1).bool())
+            if name in past_masks and hard_pruning:
+                masked = torch.masked_select(gs.view(-1),
+                                             past_masks[name].view(-1).bool())
                 if len(masked) == 0:
                     thres = 0
                 else:
                     thres = torch.quantile(masked, prune_percentage)
+
+            else:
+                thres = torch.quantile(gs.view(-1), prune_percentage)
+                # print(thres, gs.mean(), gs.std(), '\n', gs.view(-1))
 
             # if hard_pruning and name in past_masks:
             #     gs = gs * past_masks[name]
@@ -82,6 +91,11 @@ def get_masks_from_gradients(gradients, prune_percentage, global_pruning, past_m
     #         mask = torch.zeros_like(mask)
     #         mask[max] = 1.0
     #     masks[name] = mask
+
+    if len(past_masks) > 0:
+        for name, mask in masks.items():
+            if name in past_masks:
+                masks[name] = mask * past_masks[name]
 
     return masks
 

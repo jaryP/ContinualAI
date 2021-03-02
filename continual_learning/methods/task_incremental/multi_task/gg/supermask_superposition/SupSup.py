@@ -18,8 +18,9 @@ class SupermaskSuperposition(BaseMultiTaskGGMethod):
     primaryClass={cs.LG}
     }
     """
-    def __init__(self, backbone: nn.Module):
+    def __init__(self, backbone: nn.Module, pruning_percentage: float):
         super().__init__()
+        self.pruning_percentage = pruning_percentage
         self.apply_wrapper_to_model(model=backbone)
 
     def apply_wrapper_to_model(self, model):
@@ -27,7 +28,8 @@ class SupermaskSuperposition(BaseMultiTaskGGMethod):
 
             if isinstance(module, (nn.Linear, nn.Conv2d)):
                 l = getattr(model, name)
-                setattr(model, name, SupSupMaskWrapper(l))
+                setattr(model, name, SupSupMaskWrapper(l,
+                                                       self.pruning_percentage))
             self.apply_wrapper_to_model(module)
 
         # for name, module in model.named_modules():

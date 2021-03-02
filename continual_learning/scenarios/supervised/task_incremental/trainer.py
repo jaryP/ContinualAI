@@ -9,6 +9,7 @@ import numpy as np
 
 from continual_learning.eval import Evaluator
 from continual_learning.eval.metrics import Metric
+from continual_learning.eval.metrics.classification import Accuracy
 
 from continual_learning.methods.task_incremental.multi_task.gn \
     import BaseMultiTaskGNMethod
@@ -126,10 +127,12 @@ class GgTrainer(AbstractTrainer):
 
         task.train()
 
-        self.method.on_epoch_starts(backbone=self.backbone, solver=self.solver,
+        self.method.on_epoch_starts(backbone=self.backbone,
+                                    solver=self.solver,
                                     task=task)
 
-        self.method.set_task(backbone=self.backbone, solver=self.solver,
+        self.method.set_task(backbone=self.backbone,
+                             solver=self.solver,
                              task=task)
 
         self.backbone.to(self.device)
@@ -192,8 +195,6 @@ class GgTrainer(AbstractTrainer):
                self.solver.state_dict()
 
     def train_task(self, task: SupervisedTask, epochs: int):
-        # TODO: aggiungere dev score e salvataggio modello migliore
-
         task.train()
         self.solver.add_task(len(task.labels))
 
@@ -235,15 +236,17 @@ class GgTrainer(AbstractTrainer):
 
             self.evaluator.on_epoch_ends()
 
-            train_scores, train_accuracy = self.evaluate_on_split(task=task,
-                                                                  batch_size=self.batch_size * 2,
-                                                                  current_task_index=task.index,
-                                                                  split=DatasetSplits.TRAIN)
+            train_scores, train_accuracy = \
+                self.evaluate_on_split(task=task,
+                                       batch_size=self.batch_size * 2,
+                                       current_task_index=task.index,
+                                       split=DatasetSplits.TRAIN)
 
-            dev_scores, dev_accuracy = self.evaluate_on_split(task=task,
-                                                              batch_size=self.batch_size * 2,
-                                                              current_task_index=task.index,
-                                                              split=DatasetSplits.DEV)
+            dev_scores, dev_accuracy = \
+                self.evaluate_on_split(task=task,
+                                       batch_size=self.batch_size * 2,
+                                       current_task_index=task.index,
+                                       split=DatasetSplits.DEV)
 
             if dev_scores is not None:
                 score_to_compare = dev_accuracy
@@ -280,7 +283,8 @@ class GgTrainer(AbstractTrainer):
             for j in range(i + 1):
                 evaluated_task = self.tasks[j]
 
-                self.method.set_task(backbone=self.backbone, solver=self.solver,
+                self.method.set_task(backbone=self.backbone,
+                                     solver=self.solver,
                                      task=evaluated_task)
 
                 self.evaluate_on_split(task=evaluated_task,
@@ -309,7 +313,8 @@ class GnTrainer(AbstractTrainer):
                  task_epochs: int,
                  batch_size: int, criterion: Callable,
                  device: Union[str, torch.device],
-                 metrics: List[Metric]):
+                 metrics: List[Metric],
+                 task_inference_batch_size: int = 1):
 
         self.backbone = backbone
         self.solver = solver
@@ -321,16 +326,18 @@ class GnTrainer(AbstractTrainer):
         self.device = device
         self.batch_size = batch_size
         self.criterion = criterion
+        self.task_inference_batch_size = task_inference_batch_size
 
         self.evaluator = Evaluator(classification_metrics=metrics)
+        self.task_inference_evaluator = \
+            Evaluator(classification_metrics=Accuracy())
 
-    def evaluate_on_split(self,
-                          task: SupervisedTask,
-                          split: DatasetSplits,
-                          # batch_size: int,
-                          current_task_index: int = None):
+    def evaluate_gn(self,
+                    task: SupervisedTask,
+                    split: DatasetSplits,
+                    batch_size: int,
+                    current_task_index: int = None):
 
-        batch_size = 1
         scores, accuracy = None, None
         correct_task_prediction = 0
 
@@ -340,39 +347,75 @@ class GnTrainer(AbstractTrainer):
         if len(task) > 0:
             y_true, y_pred = [], []
             # task_prediction = []
+            task_true, task_pred = [], []
 
             for _, x, y in DataLoader(task, batch_size=batch_size):
                 task_i = self.method.infer_task(x=x.to(self.device),
                                                 backbone=self.backbone,
                                                 solver=self.solver)
-                y_true.append(y.item())
-                pred = -1
+                task_true.append(task.index)
+                # y_true.append(y.item())
+                # pred = -1
 
                 if task_i is not None:
-                    if task_i == task.index:
-                        correct_task_prediction += 1
+                    task_pred.append(task_i)
+                    # if task_i == task.index:
+                    #     correct_task_prediction += 1
 
-                        self.method.set_task(backbone=self.backbone,
-                                             solver=self.solver,
-                                             task_index=task_i)
+                    # self.method.set_task(backbone=self.backbone,
+                    #                      solver=self.solver,
+                    #                      task_index=task_i)
+                    #
+                    # pred = predict_batch(x=x,
+                    #                      backbone=self.backbone,
+                    #                      solver=self.solver,
+                    #                      task_prediction=task_i)
+                    # pred = pred[0].item()
+                else:
+                    task_pred.append(-1)
 
-                        pred = predict_batch(x=x,
-                                             backbone=self.backbone,
-                                             solver=self.solver,
-                                             task_prediction=task_i)
-                        pred = pred[0].item()
+                # y_pred.append(pred)
 
-                y_pred.append(pred)
+            # y_true, y_pred = np.asarray(y_true), np.asarray(y_pred)
+            #
+            # accuracy = (y_true == y_pred).sum() / len(y_true)
 
-            y_true, y_pred = np.asarray(y_true), np.asarray(y_pred)
+            scores = \
+                self.task_inference_evaluator.evaluate(task_pred,
+                                                    task_true,
+                                                    current_task=current_task_index,
+                                                    evaluated_task=task.index,
+                                                    evaluated_split=split)
+
+        task.current_split = cs
+
+        return scores
+
+    def evaluate_on_split(self, task: SupervisedTask, split: DatasetSplits,
+                          batch_size: int,
+                          current_task_index: int = None):
+
+        scores, accuracy = None, None
+        evaluated_task_index = task.index
+
+        cs = task.current_split
+        task.current_split = split
+
+        if current_task_index is None:
+            current_task_index = evaluated_task_index
+
+        if len(task) > 0:
+            y_true, y_pred = get_predictions(self.backbone, self.solver, task,
+                                             evaluate_task_index=evaluated_task_index,
+                                             batch_size=batch_size,
+                                             device=self.device)
 
             accuracy = (y_true == y_pred).sum() / len(y_true)
 
             scores = self.evaluator.evaluate(y_true, y_pred,
                                              current_task=current_task_index,
-                                             evaluated_task=task.index,
+                                             evaluated_task=evaluated_task_index,
                                              evaluated_split=split)
-
         task.current_split = cs
 
         return scores, accuracy
@@ -502,12 +545,12 @@ class GnTrainer(AbstractTrainer):
             self.evaluator.on_epoch_ends()
 
             train_scores, train_accuracy = self.evaluate_on_split(task=task,
-                                                                  # batch_size=self.batch_size * 2,
+                                                                  batch_size=self.batch_size * 2,
                                                                   current_task_index=task.index,
                                                                   split=DatasetSplits.TRAIN)
 
             dev_scores, dev_accuracy = self.evaluate_on_split(task=task,
-                                                              # batch_size=self.batch_size * 2,
+                                                              batch_size=self.batch_size * 2,
                                                               current_task_index=task.index,
                                                               split=DatasetSplits.DEV)
 
@@ -546,20 +589,28 @@ class GnTrainer(AbstractTrainer):
             for j in range(i + 1):
                 evaluated_task = self.tasks[j]
 
-                self.method.set_task(backbone=self.backbone, solver=self.solver,
+                self.method.set_task(backbone=self.backbone,
+                                     solver=self.solver,
                                      task=evaluated_task)
 
                 self.evaluate_on_split(task=evaluated_task,
-                                       # batch_size=self.batch_size * 2,
+                                       batch_size=self.batch_size * 2,
                                        current_task_index=task.index,
                                        split=DatasetSplits.TRAIN)
 
                 self.evaluate_on_split(task=evaluated_task,
-                                       # batch_size=self.batch_size * 2,
+                                       batch_size=self.batch_size * 2,
                                        current_task_index=task.index,
                                        split=DatasetSplits.DEV)
 
                 self.evaluate_on_split(task=evaluated_task,
-                                       # batch_size=self.batch_size * 2,
+                                       batch_size=self.batch_size * 2,
                                        current_task_index=task.index,
                                        split=DatasetSplits.TEST)
+
+                scores = self.evaluate_gn(task=evaluated_task,
+                                          batch_size=self.
+                                          task_inference_batch_size,
+                                          current_task_index=task.index,
+                                          split=DatasetSplits.TEST)
+                print(i, j, scores)

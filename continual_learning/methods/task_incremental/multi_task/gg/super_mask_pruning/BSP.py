@@ -16,8 +16,13 @@ from continual_learning.solvers.multi_task import MultiHeadsSolver
 
 
 class SuperMask(BaseMultiTaskGGMethod):
-    def __init__(self, mask_epochs=5, global_pruning=False, hard_pruning: bool = True,
-                 mask_parameters: dict = None, pruning_percentage=0.5, device='cpu'):
+    def __init__(self,
+                 mask_epochs=5,
+                 global_pruning=False,
+                 hard_pruning: bool = True,
+                 mask_parameters: dict = None,
+                 pruning_percentage=0.5,
+                 device='cpu'):
         super().__init__()
         if mask_parameters is None:
             mask_parameters = {'name': 'weights',
@@ -36,11 +41,15 @@ class SuperMask(BaseMultiTaskGGMethod):
         self.hooks = []
         self.tasks_masks = defaultdict(list)
 
-    def apply_wrapper_to_model(self, model, mask_params=None):
+    def apply_wrapper_to_model(self,
+                               model,
+                               mask_params=None):
         for name, module in model.named_children():
             if isinstance(module, (nn.Linear, nn.Conv2d)):
                 l = getattr(model, name)
-                setattr(model, name, EnsembleMaskedWrapper(l, where='output', masks_params=mask_params))
+                setattr(model, name,
+                        EnsembleMaskedWrapper(l, where='output',
+                                              masks_params=mask_params))
             else:
                 self.apply_wrapper_to_model(module, mask_params=mask_params)
 
@@ -57,8 +66,13 @@ class SuperMask(BaseMultiTaskGGMethod):
             h.remove()
         self.hooks = []
 
-    def _get_mask_for_task(self, name: str, task_i: int, invert_masks: bool = False):
-        if name not in self.tasks_masks or len(self.tasks_masks) == 0 or task_i == 0:
+    def _get_mask_for_task(self,
+                           name: str,
+                           task_i: int,
+                           invert_masks: bool = False):
+        if name not in self.tasks_masks or \
+                len(self.tasks_masks) == 0 or\
+                task_i == 0:
             return None
 
         masks = self.tasks_masks[name]
@@ -74,12 +88,18 @@ class SuperMask(BaseMultiTaskGGMethod):
 
         return m.float()
 
-    def set_task(self, backbone: nn.Module, solver: MultiHeadsSolver, task: SupervisedTask, invert_masks=False,
-                 *args, **kwargs):
+    def set_task(self,
+                 backbone: nn.Module,
+                 solver: MultiHeadsSolver,
+                 task: SupervisedTask,
+                 invert_masks=False,
+                 **kwargs):
+
         task_i = task.index
         self.reset_hooks()
         for name, module in backbone.named_modules():
-            _m = self._get_mask_for_task(name=name, task_i=task_i + 1, invert_masks=invert_masks)
+            _m = self._get_mask_for_task(name=name, task_i=task_i + 1,
+                                         invert_masks=invert_masks)
             if _m is not None:
                 hook = ForwardHook(module=module, mask=_m)
                 self.hooks.append(hook)
@@ -103,7 +123,12 @@ class SuperMask(BaseMultiTaskGGMethod):
 
         return final_masks
 
-    def on_task_starts(self, backbone: nn.Module, solver: MultiHeadsSolver, task: SupervisedTask, *args, **kwargs):
+    def on_task_starts(self,
+                       backbone: nn.Module,
+                       solver: MultiHeadsSolver,
+                       task: SupervisedTask,
+                       **kwargs):
+
         # self.set_task(task_i=task_i, network=network, invert_masks=True)
         task_i = task.index
         dataset = task.get_iterator(64, shuffle=True)
@@ -116,7 +141,8 @@ class SuperMask(BaseMultiTaskGGMethod):
 
         backbone.to(self.device)
 
-        mask_training(model=backbone, epochs=self.mask_epochs, dataset=dataset, solver=solver, device=self.device)
+        mask_training(model=backbone, epochs=self.mask_epochs,
+                      dataset=dataset, solver=solver, device=self.device)
         grads = defaultdict(list)
 
         for i, x, y in dataset:
@@ -146,7 +172,8 @@ class SuperMask(BaseMultiTaskGGMethod):
 
         for name, gs in grads.items():
             g = f(torch.stack(gs, 0))
-            _masks = self._get_mask_for_task(task_i=task_i, name=name, invert_masks=True)
+            _masks = self._get_mask_for_task(task_i=task_i, name=name,
+                                             invert_masks=True)
             if _masks is not None:
                 past_masks[name] = _masks
             ens_grads[name] = g
@@ -155,15 +182,17 @@ class SuperMask(BaseMultiTaskGGMethod):
         # TODO: valutare se metter a zero i gradienti relativi ai task passati
         # _masks = self._get_mask_for_task(task_i)
 
-        masks = get_masks_from_gradients(gradients=ens_grads, prune_percentage=self.pruning,
+        masks = get_masks_from_gradients(gradients=ens_grads,
+                                         prune_percentage=self.pruning,
                                          global_pruning=self.global_pruning,
-                                         past_masks=past_masks if self.hard_pruning else None,
+                                         past_masks=past_masks,
+                                         hard_pruning=self.hard_pruning,
                                          device=self.device)
 
-        if len(past_masks) > 0:
-            for name, mask in masks.items():
-                if name in past_masks:
-                    masks[name] = mask * past_masks[name]
+        # if len(past_masks) > 0:
+        #     for name, mask in masks.items():
+        #         if name in past_masks:
+        #             masks[name] = mask * past_masks[name]
 
         #     gs = gs * past_masks[name]
 
@@ -175,7 +204,10 @@ class SuperMask(BaseMultiTaskGGMethod):
 
         self.set_task(backbone=backbone, task=task, solver=solver)
 
-    def after_gradient_calculation(self, backbone: nn.Module, task: SupervisedTask, *args, **kwargs):
+    def after_gradient_calculation(self,
+                                   backbone: nn.Module,
+                                   task: SupervisedTask,
+                                   **kwargs):
         current_task = task.index
         for name, module in backbone.named_modules():
             m = self._get_mask_for_task(name=name, task_i=current_task, invert_masks=True)

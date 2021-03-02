@@ -4,7 +4,7 @@ from collections import defaultdict
 from itertools import chain
 
 import numpy as np
-from typing import List, Union
+from typing import List, Union, Any
 
 from continual_learning.benchmarks import DatasetSplits
 from continual_learning.eval.metrics import Metric, ClassificationMetric, ContinualLearningMetric
@@ -25,12 +25,18 @@ class Evaluator:
         self._classification_metrics = []
         self._cl_metrics = []
         self._others_metrics = []
+        self._custom_metrics = []
 
-        self._scores = {split: {} for split in DatasetSplits if split != DatasetSplits.ALL}
+        self._scores = {split: {} for split in DatasetSplits
+                        if split != DatasetSplits.ALL}
+
         self._labels = {}
-        self._r = {split: {} for split in DatasetSplits if split != DatasetSplits.ALL}
 
-        # self._scores = defaultdict(lambda: defaultdict(list))
+        self._r = {split: {} for split in DatasetSplits
+                   if split != DatasetSplits.ALL}
+
+        self._custom_metrics = {split: {} for split in DatasetSplits
+                        if split != DatasetSplits.ALL}
 
         if isinstance(classification_metrics, Metric):
             classification_metrics = [classification_metrics]
@@ -93,12 +99,18 @@ class Evaluator:
         _r = self.task_matrix
         res = {s: {} for s in _r}
         for split in _r:
-            print(split)
             for name, m in self._classification_metrics:
-                res[split][name] = {n: m(_r[split][name]) for n, m in self._cl_metrics}
+                res[split][name] = {n: m(_r[split][name])
+                                    for n, m in self._cl_metrics}
         return res
 
     def others_metrics_results(self) -> dict:
+        res = {}
+        for name, m in self._others_metrics:
+            res[name] = m()
+        return res
+
+    def custom_metrics_results(self) -> dict:
         res = {}
         for name, m in self._others_metrics:
             res[name] = m()
@@ -116,8 +128,16 @@ class Evaluator:
     def others_metrics(self) -> List[str]:
         return [name for name, _ in self._others_metrics]
 
-    def evaluate(self, y_true: Union[list, np.ndarray], y_pred: Union[list, np.ndarray],
-                 current_task: int, evaluated_task: int, evaluated_split: DatasetSplits):
+    @property
+    def custom_metrics(self) -> List[str]:
+        return [name for name, _ in self._custom_metrics]
+
+    def evaluate(self,
+                 y_true: Union[list, np.ndarray],
+                 y_pred: Union[list, np.ndarray],
+                 current_task: int,
+                 evaluated_task: int,
+                 evaluated_split: DatasetSplits):
 
         if current_task not in self._labels:
             self._labels[evaluated_task] = set(y_true)
@@ -155,6 +175,14 @@ class Evaluator:
     def final_score(self, y_true: Union[list, np.ndarray], y_pred: Union[list, np.ndarray],
                  current_task: int, evaluated_task: int):
         pass
+
+    def add_custom_metric(self,
+                          name: str,
+                          value: Any,
+                          evaluated_split: DatasetSplits):
+
+        metrics = self._custom_metrics.get(evaluated_split, {})
+
 
     def add_cl_metric(self, metric: ContinualLearningMetric):
         self._cl_metrics.append((metric.__class__.__name__, metric))

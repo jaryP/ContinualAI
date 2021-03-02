@@ -9,6 +9,11 @@ from continual_learning.benchmarks.base import UnsupervisedDataset, \
 from continual_learning.scenarios.tasks import Task, SupervisedTask
 
 
+class StreamDataset(ABC):
+    def __init__(self):
+        pass
+
+
 class DomainIncremental(ABC):
     def __init__(self,
                  dataset: Union[SupervisedDataset, UnsupervisedDataset],
