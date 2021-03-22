@@ -26,17 +26,12 @@ class EmbeddingRegularization(BaseMultiTaskGGMethod):
     }
     """
 
-    # def get_parameters(self, current_task, network: nn.Module, solver: Solver):
-    #     network.parameters()
-    #     solver.parameters()
-    #
+    def __init__(self, task_memory_size: int, importance: float = 1,
+                 sample_size: int = None, distance: str = 'cosine',
+                 random_state: Union[np.random.RandomState, int] = None,
+                 **kwargs):
 
-    def __init__(self, task_memory_size: int, importance: float = 1, sample_size: int = None,
-                 distance: str = 'cosine',
-                 random_state: Union[np.random.RandomState, int] = None, **kwargs):
-
-        BaseMethod.__init__(self)
-
+        super().__init__()
         self.memorized_task_size = task_memory_size
         if sample_size is None:
             sample_size = task_memory_size
@@ -85,14 +80,6 @@ class EmbeddingRegularization(BaseMultiTaskGGMethod):
         img = torch.stack(img, 0)
         embs = torch.stack(embs, 0)
 
-        # dataset = DataLoader(t, batch_size=64)
-        #
-        # _, images, _ = RandomSampler(task)[:self.sample_size]
-        # _, images, _ = task[idxs]
-        #
-        #
-        # embs = encoder(images)
-
         self.task_memory.append((task.index, img, embs))
 
     def before_gradient_calculation(self, loss: torch.Tensor, backbone: torch.nn.Module, *args, **kwargs):
@@ -102,16 +89,7 @@ class EmbeddingRegularization(BaseMultiTaskGGMethod):
             to_back = []
             for _, images, embs in self.task_memory:
 
-                # idxs = np.arange(len(images))
-                # idxs = self.RandomState.choice(idxs, self.sample_size, replace=False)
-                # idxs = torch.tensor(idxs)
-
-                # images, embs = images[idxs], embs[idxs]
-
                 new_embedding = backbone(images)
-
-                # if self.normalize:
-                #     new_embedding = F.normalize(new_embedding, p=2, dim=1)
 
                 if self.distance == 'euclidean':
                     dist = (embs - new_embedding).norm(p=None, dim=1)

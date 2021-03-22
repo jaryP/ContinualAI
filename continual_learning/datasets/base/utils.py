@@ -8,8 +8,8 @@ from typing import Callable, Tuple, Union, Sequence
 import numpy as np
 from torch.utils.data import DataLoader
 
-from continual_learning.benchmarks import UnsupervisedDataset, SupervisedDataset
-from continual_learning.benchmarks.base import DatasetSplits
+from continual_learning.datasets.base import UnsupervisedDataset, \
+    SupervisedDataset, DatasetSplits
 
 
 class DownloadableDataset(ABC):
@@ -21,7 +21,7 @@ class DownloadableDataset(ABC):
                  data_folder: str = None,
                  **kwargs):
         """
-        An abstract class used to download the benchmarks.
+        An abstract class used to download the datasets.
         :param name: The name of the dataset.
         :param transformer: The transformer function used when a sample is retrieved.
         :param download_if_missing: If the dataset needs to be downloaded if missing.

@@ -6,7 +6,7 @@ from itertools import chain
 import numpy as np
 from typing import List, Union, Any
 
-from continual_learning.benchmarks import DatasetSplits
+from continual_learning.datasets.base import DatasetSplits
 from continual_learning.eval.metrics import Metric, ClassificationMetric, ContinualLearningMetric
 
 

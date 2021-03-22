@@ -20,11 +20,9 @@ class BatchEnsemble(BaseMultiTaskGGMethod):
     primaryClass={cs.LG}
     }
     """
-    def __init__(self, backbone: nn.Module):
+    def __init__(self, backbone: nn.Module, **kwargs):
         super().__init__()
         self.apply_wrapper_to_model(model=backbone)
-        # self.model = backbone
-        # print(backbone)
 
     def apply_wrapper_to_model(self, model):
         for name, module in model.named_children():

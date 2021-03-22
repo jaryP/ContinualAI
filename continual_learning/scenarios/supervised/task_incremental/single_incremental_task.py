@@ -2,7 +2,7 @@ from typing import Union, List
 
 import numpy as np
 
-from continual_learning.benchmarks import SupervisedDataset, DatasetSplits
+from continual_learning.datasets.base import SupervisedDataset, DatasetSplits
 from continual_learning.scenarios.base import IncrementalSupervisedProblem
 from continual_learning.scenarios.tasks import SupervisedTask
 from continual_learning.scenarios.supervised.utils import get_labels_set

@@ -5,9 +5,10 @@ from urllib.request import urlretrieve
 
 import numpy as np
 import pickle
-from continual_learning.benchmarks import SupervisedDownloadableDataset
 
 __all__ = ['CIFAR100', 'CIFAR10']
+
+from continual_learning.datasets.base import SupervisedDownloadableDataset
 
 
 class CIFAR10(SupervisedDownloadableDataset):

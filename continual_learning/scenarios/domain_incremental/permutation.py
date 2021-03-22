@@ -8,8 +8,8 @@ from PIL.Image import Image
 from torch import Tensor
 from torchvision.transforms import ToPILImage, ToTensor, Compose
 
-from continual_learning.benchmarks import SupervisedDataset, \
-    UnsupervisedDataset, DatasetSplits
+from continual_learning.datasets.base import UnsupervisedDataset, \
+    SupervisedDataset, DatasetSplits
 from continual_learning.scenarios.base import IncrementalSupervisedProblem, \
     DomainIncremental
 from continual_learning.scenarios.tasks import Task, \
@@ -112,24 +112,3 @@ class Permutation(DomainIncremental):
     def __iter__(self):
         for t in self._tasks:
             yield t
-
-
-if __name__ == '__main__':
-    from continual_learning.benchmarks import MNIST
-    import matplotlib.pyplot as plt
-
-    d = MNIST(download_if_missing=True,
-              transformer=None,
-              test_transformer=None, data_folder='/media/jary/Data/progetti/CL/'
-                                                 'cl_framework/'
-                                                 'continual_learning/'
-                                                 'tests/training/mnist')
-    perm = Permutation(d, permutation_n=10)
-    print(len(perm))
-
-    for t in perm:
-        _, x, y = t[0]
-        print(y, x.sum())
-        plt.imshow(x)
-
-        plt.show()

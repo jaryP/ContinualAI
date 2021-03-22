@@ -8,4 +8,3 @@ from .pruning import Pruning
 from .single_task import SingleTask
 from .super_mask_pruning import SuperMask
 from .supermask_superposition import SupermaskSuperposition
-from .cumulative import Cumulative

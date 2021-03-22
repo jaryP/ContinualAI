@@ -1,11 +1,10 @@
-from typing import Union, Type, Callable
+from typing import Union, Callable
 
 import numpy as np
 from torch.utils.data import DataLoader
 
-from continual_learning.benchmarks import DatasetSplits, SupervisedDataset
-from continual_learning.benchmarks.base import IndexesContainer, \
-    UnsupervisedDataset
+from continual_learning.datasets.base import IndexesContainer, \
+    UnsupervisedDataset, SupervisedDataset, DatasetSplits
 
 
 class Task(IndexesContainer):

@@ -4,8 +4,9 @@ from urllib.request import urlretrieve
 import numpy as np
 from scipy import io
 
-from continual_learning.benchmarks import SupervisedDownloadableDataset
+from continual_learning.datasets.base import SupervisedDownloadableDataset
 
+__all__ = ['SVHN']
 
 class SVHN(SupervisedDownloadableDataset):
 

@@ -4,8 +4,8 @@ from typing import Union, List, Type
 import numpy as np
 import torch
 
-from continual_learning.benchmarks.base import UnsupervisedDataset, \
-    SupervisedDataset
+from continual_learning.datasets.base import SupervisedDataset, \
+    UnsupervisedDataset
 from continual_learning.scenarios.tasks import Task, SupervisedTask
 
 

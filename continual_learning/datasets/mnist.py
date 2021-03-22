@@ -4,7 +4,7 @@ from os.path import join, exists
 from typing import Callable, Tuple
 from urllib.request import urlretrieve
 import numpy as np
-from continual_learning.benchmarks import SupervisedDownloadableDataset
+from continual_learning.datasets.base import SupervisedDownloadableDataset
 
 __all__ = ['MNIST', 'K49MNIST', 'KMNIST']
 

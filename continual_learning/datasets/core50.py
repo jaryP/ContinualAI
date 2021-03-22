@@ -8,7 +8,9 @@ from zipfile import ZipFile
 
 import numpy as np
 
-from continual_learning.benchmarks import SupervisedDownloadableDataset
+from continual_learning.datasets.base import SupervisedDownloadableDataset
+
+__all__ = ['Core50_128']
 
 scen2dirs = {
     'ni': "batches_filelists/NI_inc/",

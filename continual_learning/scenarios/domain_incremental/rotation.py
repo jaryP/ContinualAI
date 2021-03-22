@@ -1,16 +1,13 @@
-from functools import reduce
-from operator import mul
 from typing import Union, List
 
 import numpy as np
-import torch
 from PIL.Image import Image
-from torchvision.transforms import ToTensor, RandomRotation, Compose, ToPILImage
+from torchvision.transforms import ToTensor, RandomRotation, ToPILImage
 
-from continual_learning.benchmarks import UnsupervisedDataset, \
-    SupervisedDataset, DatasetSplits
+from continual_learning.datasets.base import UnsupervisedDataset, \
+    SupervisedDataset
 from continual_learning.scenarios.base import DomainIncremental
-from continual_learning.scenarios.tasks import Task, SupervisedTransformerTask, \
+from continual_learning.scenarios.tasks import SupervisedTransformerTask, \
     UnsupervisedTransformerTask
 
 

@@ -1,8 +1,6 @@
-import os
 from abc import ABC, abstractmethod
-from collections import Sequence
 from enum import unique, Enum
-from typing import Callable, Union, Tuple, List
+from typing import Callable, Union, Tuple
 
 import numpy as np
 from PIL import Image

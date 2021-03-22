@@ -22,7 +22,8 @@ class SuperMask(BaseMultiTaskGGMethod):
                  hard_pruning: bool = True,
                  mask_parameters: dict = None,
                  pruning_percentage=0.5,
-                 device='cpu'):
+                 device='cpu',
+                 **kwargs):
         super().__init__()
         if mask_parameters is None:
             mask_parameters = {'name': 'weights',
@@ -178,10 +179,6 @@ class SuperMask(BaseMultiTaskGGMethod):
                 past_masks[name] = _masks
             ens_grads[name] = g
 
-        # ens_grads = {name: f(torch.stack(gs, 0)).detach().cpu() for name, gs in grads.items()}
-        # TODO: valutare se metter a zero i gradienti relativi ai task passati
-        # _masks = self._get_mask_for_task(task_i)
-
         masks = get_masks_from_gradients(gradients=ens_grads,
                                          prune_percentage=self.pruning,
                                          global_pruning=self.global_pruning,
@@ -189,17 +186,7 @@ class SuperMask(BaseMultiTaskGGMethod):
                                          hard_pruning=self.hard_pruning,
                                          device=self.device)
 
-        # if len(past_masks) > 0:
-        #     for name, mask in masks.items():
-        #         if name in past_masks:
-        #             masks[name] = mask * past_masks[name]
-
-        #     gs = gs * past_masks[name]
-
         for name, m in masks.items():
-            # ms = self.tasks_masks.get(name, [])
-            # ms.append(m)
-            # self.tasks_masks[name] = ms
             self.tasks_masks[name].append(m)
 
         self.set_task(backbone=backbone, task=task, solver=solver)

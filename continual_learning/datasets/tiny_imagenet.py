@@ -1,15 +1,16 @@
 import os
 from collections import defaultdict
-from operator import add
 from os.path import exists
 from typing import Callable, Tuple
 from zipfile import ZipFile
 
 import numpy as np
 
-from continual_learning.benchmarks import SupervisedDownloadableDataset
 from urllib.request import urlretrieve
 
+from continual_learning.datasets.base import SupervisedDownloadableDataset
+
+__all__ = ['TinyImagenet']
 
 class TinyImagenet(SupervisedDownloadableDataset):
     url = 'http://cs231n.stanford.edu/tiny-imagenet-200.zip'

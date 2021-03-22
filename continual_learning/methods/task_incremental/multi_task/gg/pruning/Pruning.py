@@ -34,22 +34,7 @@ class Pruning(BaseMultiTaskGGMethod):
 
         self.tasks_masks = {}
 
-    # def get_parameters(self, task, backbone: nn.Module, solver: Solver, **kwargs):
-    #     current_task = task.index
-    #
-    #     if current_task > 0:
-    #         for n, m in backbone.named_modules():
-    #             if isinstance(m, BatchNorm2d):
-    #                 m.track_running_stats = False
-    #
-    #     return super().get_parameters(task, backbone, solver)
-
     def apply_wrapper_to_model(self, model):
-        # for name, module in model.named_modules():
-        #     if isinstance(module, (nn.Linear, nn.Conv2d)):
-        #         l = getattr(model, name)
-        #         setattr(model, name, PrunedLayer(l))
-        # print(model)
         for name, module in model.named_children():
 
             if isinstance(module, (nn.Linear, nn.Conv2d)):
@@ -125,5 +110,3 @@ class Pruning(BaseMultiTaskGGMethod):
                 break
 
         self.tasks_masks[task.index] = masks
-
-
