@@ -4,7 +4,7 @@ import unittest
 import torchvision
 from torch import nn
 
-from continual_learning.benchmarks import *
+from continual_learning.datasets import MNIST
 
 
 class MNIST_tests(unittest.TestCase):

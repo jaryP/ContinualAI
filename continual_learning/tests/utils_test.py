@@ -2,7 +2,7 @@ import os
 import unittest
 
 from continual_learning.benchmarks import MNIST
-from continual_learning.benchmarks.utils import ConcatDataset
+from continual_learning.benchmarks.base.utils import ConcatDataset
 
 
 class datasets_concatenation_tests(unittest.TestCase):
