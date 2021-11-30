@@ -10,19 +10,28 @@ __all__ = ['MNIST', 'K49MNIST', 'KMNIST']
 
 
 class MNIST(SupervisedDownloadableDataset):
-    url = {'train': {'images': 'http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz',
-                     'labels': 'http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz'},
-           'test': {'images': 'http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz',
-                    'labels': 'http://yann.lecun.com/exdb/mnist/t10k-labels-idx1-ubyte.gz'}}
+    url = {'train': {'images': 'http://yann.lecun.com/exdb/mnist/'
+                               'train-images-idx3-ubyte.gz',
+                     'labels': 'http://yann.lecun.com/exdb/mnist/'
+                               'train-labels-idx1-ubyte.gz'},
+           'test': {'images': 'http://yann.lecun.com/exdb/mnist/'
+                              't10k-images-idx3-ubyte.gz',
+                    'labels': 'http://yann.lecun.com/exdb/mnist/'
+                              't10k-labels-idx1-ubyte.gz'}}
 
-    def __init__(self, download_if_missing: bool = True, data_folder: str = None,
-                 transformer: Callable = None, test_transformer: Callable = None, target_transformer: Callable = None):
+    def __init__(self, download_if_missing: bool = True,
+                 data_folder: str = None,
+                 transformer: Callable = None,
+                 test_transformer: Callable = None,
+                 target_transformer: Callable = None):
 
         self._get_int = lambda x: int(codecs.encode(x, 'hex'), 16)
 
         self.file_names = [url.rpartition('/')[2] for url in self.url]
 
-        super().__init__(name='MNIST', download_if_missing=download_if_missing, data_folder=data_folder,
+        super().__init__(name='MNIST',
+                         download_if_missing=download_if_missing,
+                         data_folder=data_folder,
                          transformer=transformer,
                          target_transformer=target_transformer,
                          test_transformer=test_transformer)

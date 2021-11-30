@@ -3,6 +3,14 @@
 This is a Continual Learning library based on **Pytorch**, mainly born for personal use, which can be used for fast 
 prototyping, training and to compare different build-in methods over a various numbers of scenarios and benchmarks.  
 
+# Installation
+
+Type
+    
+    pip install continual-learning
+
+# Continual learning framework
+
 The library is organized in four main modules:
 
 - [Benchmarks](continual_learning/datasets): This module contains the most used dataset in CL, reimplemented to give more flexibility.
