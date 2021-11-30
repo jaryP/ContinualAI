@@ -8,8 +8,6 @@ from PIL import Image
 from torch.utils.data import DataLoader
 
 from . import DatasetSplits, DatasetType
-# from .split_functions import extract_dev, split_dataset
-
 
 IndexesType = Union[list, np.ndarray]
 
@@ -132,52 +130,12 @@ class AbstractDataset(ABC, IndexesContainer):
     def __getitem__(self, item: Union[slice, int, list, np.ndarray]) -> \
             Tuple[Union[list, tuple, int, list], Union[np.ndarray, list]]:
         raise NotImplementedError
-        # """
-        # Given an index, or a list of indexes (defined as list, tuple o slice), return the associated samples.
-        # :param item: The index, or more than one, used to fetch the samples in the dataset.
-        # :return: Return :param item: and the associated samples, modified by the transformer function.
-        # """
-        # to_map = False
-        #
-        # if not isinstance(item, (np.integer, int)):
-        #     to_map = True
-        #     if isinstance(item, slice):
-        #         s = item.start if item.start is not None else 0
-        #         e = item.stop
-        #         step = item.step if item.step is not None else 1
-        #         item = list(range(s, e, step))
-        #     elif isinstance(item, tuple):
-        #         item = list(item)
-        #
-        # idxs = self.current_indexes[item]
-        #
-        # if self.is_path_dataset:
-        #     if to_map:
-        #         x = [Image.open(self._x[i]).convert('RGB') for i in idxs]
-        #     else:
-        #         x = Image.open(self._x[idxs]).convert('RGB')
-        # else:
-        #     x = self._x[idxs]
-        #
-        # if to_map:
-        #     x = list(map(self._get_transformer(), x))
-        # else:
-        #     x = self._get_transformer()(x)
-        #
-        # return item, x
 
     def get_iterator(self, batch_size, shuffle=True, sampler=None,
                      num_workers=0, pin_memory=False):
         return DataLoader(self, batch_size=batch_size, shuffle=shuffle,
                           sampler=sampler, pin_memory=pin_memory,
                           num_workers=num_workers)
-
-    # def x(self, split: DatasetSplits = None):
-    #     if split is None:
-    #         split = self.current_split
-    #
-    #     return list(
-    #         map(self._get_transformer(), self._x[self.get_indexes(split)]))
 
     @abstractmethod
     def data(self, split: DatasetSplits = None):
@@ -191,71 +149,6 @@ class AbstractDataset(ABC, IndexesContainer):
     @property
     def y(self) -> np.ndarray:
         raise AttributeError('The dataset does not have y property')
-
-    # def preprocess(self, f: Callable) -> None:
-    #     """
-    #     Apply the input function f to the current split.
-    #     :param f: The callable function: f(x).
-    #     """
-    #     self._x = f(self._x)
-
-    # def split_dataset(self, test_split: float = 0.2, dev_split: float = 0.0,
-    #                   random_state: Union[np.random.RandomState, int] = None) \
-    #         -> None:
-    #     """
-    #     When called, split the dataset according to the values passed to the function.
-    #     Modify the dataset in-place.
-    #     :param test_split: The percentage of the data to be used in the test set. Must be 0 <= test_split <= 1
-    #     :param dev_split: The percentage of the data to be used in the dev set. Must be 0 <= dev_split <= 1.
-    #     :param random_state: The random state used to shuffle the dataset.
-    #     If it isn't a numpy RandomState object, the object is retrieved by doing
-    #     np.random.RandomState(:param random_state:).
-    #     """
-    #     assert test_split >= 0, 'The test_split must be 0 <= test_split <= 1. The current value is {}' \
-    #         .format(test_split)
-    #     assert dev_split >= 0, 'The dev_split must be 0 <= dev_split <= 1. The current value is {}'.format(
-    #         dev_split)
-    #     assert test_split + dev_split < 1, 'The sum of test_split and dev_split must be less than 1. ' \
-    #                                        'The current value is {}'.format(
-    #         dev_split + test_split)
-    #
-    #     _train_split, _test_split, _dev_split = \
-    #         split_dataset(self._x, test_split=test_split,
-    #                       dev_split=dev_split, random_state=random_state)
-    #
-    #     super(IndexesContainer, self)._splits = \
-    #         {
-    #             DatasetSplits.TRAIN: np.asarray(_train_split, dtype=int),
-    #             DatasetSplits.TEST: np.asarray(_test_split, dtype=int),
-    #             DatasetSplits.DEV: np.asarray(_dev_split, dtype=int),
-    #         }
-    #
-    # def create_dev_split(self, dev_split: float = 0.1,
-    #                      random_state: Union[np.random.RandomState, int]
-    #                      = None) -> None:
-    #     """
-    #     When called, extract the dev split from the training set
-    #     Modify the dataset in-place.
-    #     :param dev_split: The percentage of the data to be used in the dev set. Must be 0 <= dev_split <= 1.
-    #     :param random_state: The random state used to shuffle the dataset.
-    #     If it isn't a numpy RandomState object, the object is retrieved by doing
-    #     np.random.RandomState(:param random_state:).
-    #     """
-    #     assert dev_split >= 0
-    #
-    #     _train_split, _dev_split = extract_dev(
-    #         y=self.get_indexes(DatasetSplits.
-    #                            TRAIN),
-    #         dev_split=dev_split,
-    #         random_state=random_state)
-    #
-    #     self._splits = \
-    #         {
-    #             DatasetSplits.TRAIN: np.asarray(_train_split, dtype=int),
-    #             DatasetSplits.TEST: np.asarray(
-    #                 self.get_indexes(DatasetSplits.TEST), dtype=int),
-    #             DatasetSplits.DEV: np.asarray(_dev_split, dtype=int),
-    #         }
 
 
 class DatasetView(object):
@@ -305,7 +198,6 @@ class UnsupervisedDataset(AbstractDataset):
         :param images_path: the path from the root of the dataset, in which the images are stored.
         :param kwargs: Additional parameters.
         """
-        # print(len(x), sum(map(len, [train, test, dev])))
         assert len(x) == sum(map(len, [train, test, dev]))
 
         super().__init__(transformer=transformer,
@@ -317,27 +209,7 @@ class UnsupervisedDataset(AbstractDataset):
                          images_path = images_path,
                          **kwargs)
 
-        # self.is_path_dataset = is_path_dataset
-        # self.images_path = images_path
-
         self._x = x
-
-        # if transformer is not None:
-        #     assert test_transformer is not None
-        #
-        # self.transformer = transformer \
-        #     if transformer is not None else lambda z: z
-        # self.test_transformer = test_transformer \
-        #     if test_transformer is not None else lambda z: z
-
-    # def _get_transformer(self, split: DatasetSplits = None):
-    #     if split is None:
-    #         split = self.current_split
-    #
-    #     if split == DatasetSplits.TRAIN:
-    #         return self.transformer
-    #     else:
-    #         return self.test_transformer
 
     def __getitem__(self, item: Union[slice, int, list, np.ndarray]) -> \
             Tuple[Union[list, tuple, int, list], Union[np.ndarray, list]]:
@@ -376,81 +248,12 @@ class UnsupervisedDataset(AbstractDataset):
 
         return item, x
 
-    # def get_iterator(self, batch_size, shuffle=True, sampler=None, num_workers=0, pin_memory=False):
-    #     return DataLoader(self, batch_size=batch_size, shuffle=shuffle,
-    #                       sampler=sampler, pin_memory=pin_memory, num_workers=num_workers)
-
-    # def x(self, split: DatasetSplits = None):
-    #     if split is None:
-    #         split = self.current_split
-    #
-    #     return list(map(self._get_transformer(), self._x[self.get_indexes(split)]))
-
     @property
     def x(self):
         return self._x[self.current_indexes]
 
     def data(self, split: DatasetSplits = None):
         return self.x
-
-    # def preprocess(self, f: Callable) -> None:
-    #     """
-    #     Apply the input function f to the current split.
-    #     :param f: The callable function: f(x).
-    #     """
-    #     self._x = f(self._x)
-
-    # def split_dataset(self, test_split: float = 0.2, dev_split: float = 0.0,
-    #                   random_state: Union[np.random.RandomState, int] = None) -> None:
-    #     """
-    #     When called, split the dataset according to the values passed to the function.
-    #     Modify the dataset in-place.
-    #     :param test_split: The percentage of the data to be used in the test set. Must be 0 <= test_split <= 1
-    #     :param dev_split: The percentage of the data to be used in the dev set. Must be 0 <= dev_split <= 1.
-    #     :param random_state: The random state used to shuffle the dataset.
-    #     If it isn't a numpy RandomState object, the object is retrieved by doing
-    #     np.random.RandomState(:param random_state:).
-    #     """
-    #     assert test_split >= 0, 'The test_split must be 0 <= test_split <= 1. The current value is {}' \
-    #         .format(test_split)
-    #     assert dev_split >= 0, 'The dev_split must be 0 <= dev_split <= 1. The current value is {}'.format(dev_split)
-    #     assert test_split + dev_split < 1, 'The sum of test_split and dev_split must be less than 1. ' \
-    #                                        'The current value is {}'.format(dev_split + test_split)
-    #
-    #     _train_split, _test_split, _dev_split = \
-    #         split_dataset(self._x, test_split=test_split, dev_split=dev_split, random_state=random_state)
-    #
-    #     super(UnsupervisedDataset, self)._splits = \
-    #         {
-    #             DatasetSplits.TRAIN: np.asarray(_train_split, dtype=int),
-    #             DatasetSplits.TEST: np.asarray(_test_split, dtype=int),
-    #             DatasetSplits.DEV: np.asarray(_dev_split, dtype=int),
-    #         }
-
-    # def create_dev_split(self, dev_split: float = 0.1,
-    #                      random_state: Union[np.random.RandomState, int] = None):
-    #     """
-    #     When called, extract the dev split from the training set
-    #     Modify the dataset in-place.
-    #     :param dev_split: The percentage of the data to be used in the dev set. Must be 0 <= dev_split <= 1.
-    #     :param random_state: The random state used to shuffle the dataset.
-    #     If it isn't a numpy RandomState object, the object is retrieved by doing
-    #     np.random.RandomState(:param random_state:).
-    #     """
-    #     assert dev_split >= 0
-    #
-    #     _train_split, _dev_split = extract_dev(y=self.get_indexes(DatasetSplits.
-    #                                                               TRAIN),
-    #                                            dev_split=dev_split,
-    #                                            random_state=random_state)
-    #
-    #     self._splits = \
-    #         {
-    #             DatasetSplits.TRAIN: np.asarray(_train_split, dtype=int),
-    #             DatasetSplits.TEST: np.asarray(
-    #                 self.get_indexes(DatasetSplits.TEST), dtype=int),
-    #             DatasetSplits.DEV: np.asarray(_dev_split, dtype=int),
-    #         }
 
 
 class SupervisedDataset(UnsupervisedDataset):
@@ -499,11 +302,9 @@ class SupervisedDataset(UnsupervisedDataset):
                          test_transformer=test_transformer,
                          **kwargs)
 
-        # self._x = x
         self._y = y
         assert len(self._x) == len(self._y)
 
-        # self.target_transformer = target_transformer if target_transformer is not None else lambda z: z
         self.target_transformer = target_transformer \
             if target_transformer is not None else lambda z: z
 
@@ -520,33 +321,13 @@ class SupervisedDataset(UnsupervisedDataset):
 
         if not isinstance(item, (np.integer, int)):
             to_map = True
-            # if isinstance(item, slice):
-            #     s = item.start if item.start is not None else 0
-            #     e = item.stop
-            #     step = item.step if item.step is not None else 1
-            #     item = list(range(s, e, step))
-            # elif isinstance(item, tuple):
-            #     item = list(item)
 
         item, x = super().__getitem__(item)
-        # item, x = super()[item]
-
-        # idxs = self.current_indexes[item]
-        #
-        # if self.is_path_dataset:
-        #     if to_map:
-        #         x = [Image.open(self._x[i]).convert('RGB') for i in idxs]
-        #     else:
-        #         x = Image.open(self._x[idxs]).convert('RGB')
-        # else:
-        #     x = self._x[idxs]
 
         if to_map:
-            # x = list(map(self._get_transformer(), x))
             y = list(map(self.target_transformer,
                          self._y[self.current_indexes[item]]))
         else:
-            # x = self._get_transformer()(x)
             y = self.target_transformer(self._y[self.current_indexes[item]])
 
         return item, x, y
@@ -558,40 +339,12 @@ class SupervisedDataset(UnsupervisedDataset):
         """
         return self._labels
 
-    # def y(self, split: DatasetSplits = None):
-    #     if split is None:
-    #         split = self.current_split
-    #
-    #     return list(map(self._target_transformer, self._y[self.get_indexes(split)]))
-
     @property
     def y(self):
         return self._y[self.current_indexes]
 
     def data(self, split: DatasetSplits = None):
-        return self.x(split), self.y(split)
-
-    # @property
-    # def y(self) -> Union[np.ndarray, list]:
-    #     """
-    #     :return: The labels of the current split.
-    #     """
-    #     return list(map(self._target_transformer, self._y[self.current_indexes]))
-    #
-    # @property
-    # def data(self):
-    #     """
-    #     Alias for (self.x, self.y)
-    #     :return:
-    #     """
-    #     return self.x, self.y
-
-    # def apply_transformer(self, v: bool = True):
-    #     super().apply_transformer(v)
-    #     if v:
-    #         self._target_transformer = self.target_transformer
-    #     else:
-    #         self._target_transformer = lambda x: x
+        return self.x, self.y
 
     def preprocess_targets(self, f: Callable):
         """
@@ -599,30 +352,3 @@ class SupervisedDataset(UnsupervisedDataset):
         :param f: The callable function: f(x).
         """
         self._y = f(self._y)
-
-    # def split_dataset(self, test_split: float = 0.2, dev_split: float = 0.0, balanced_split: bool = True,
-    #                   random_state: Union[np.random.RandomState, int] = None):
-    #     """
-    #     When called, split the dataset according to the values passed to the function.
-    #     Modify the dataset in-place.
-    #     :param test_split: The percentage of the data to be used in the test set. Must be 0 <= test_split <= 1
-    #     :param dev_split: The percentage of the data to be used in the dev set. Must be 0 <= dev_split <= 1.
-    #     :param balanced_split: If the resulting splits need to have balanced number of samples for each label
-    #     :param random_state: The random state used to shuffle the dataset.
-    #     If it isn't a numpy RandomState object, the object is retrieved by doing
-    #     np.random.RandomState(:param random_state:).
-    #     """
-    #     assert test_split >= 0
-    #     assert dev_split >= 0
-    #     assert test_split + dev_split < 1
-    #
-    #     _train_split, _test_split, _dev_split = \
-    #         split_dataset(self._y, balance_labels=balanced_split,
-    #                       test_split=test_split, dev_split=dev_split, random_state=random_state)
-    #
-    #     self._splits = \
-    #         {
-    #             DatasetSplits.TRAIN: np.asarray(_train_split, dtype=int),
-    #             DatasetSplits.TEST: np.asarray(_test_split, dtype=int),
-    #             DatasetSplits.DEV: np.asarray(_dev_split, dtype=int),
-    #         }
