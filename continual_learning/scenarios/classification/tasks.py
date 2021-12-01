@@ -16,38 +16,33 @@ class Task(IndexesContainer):
                  test: [list, np.ndarray] = None,
                  dev: [list, np.ndarray] = None,
                  **kwargs):
-
         super().__init__(train=train, dev=dev, test=test, **kwargs)
 
         self.base_dataset = base_dataset
         self.index = index
 
-    def __len__(self):
-        return len(self.base_dataset)
-
     def __getitem__(self, item):
         idx = self.current_indexes
         i = idx[item]
-        a = self.base_dataset[i]
-        return a
+        return self.base_dataset[i]
 
     @IndexesContainer.current_split.setter
     def current_split(self, v: DatasetSplits) -> None:
         self._current_split = v
         self.base_dataset.current_split = v
 
-    # def get_iterator(self,
-    #                  batch_size: int,
-    #                  shuffle: bool = True,
-    #                  sampler=None,
-    #                  num_workers: int = 0,
-    #                  pin_memory: bool = False):
-    #     return DataLoader(self,
-    #                       batch_size=batch_size,
-    #                       shuffle=shuffle,
-    #                       sampler=sampler,
-    #                       pin_memory=pin_memory,
-    #                       num_workers=num_workers)
+    def get_iterator(self,
+                     batch_size: int,
+                     shuffle: bool = True,
+                     sampler=None,
+                     num_workers: int = 0,
+                     pin_memory: bool = False):
+        return DataLoader(self,
+                          batch_size=batch_size,
+                          shuffle=shuffle,
+                          sampler=sampler,
+                          pin_memory=pin_memory,
+                          num_workers=num_workers)
 
 
 class SupervisedTask(Task):
@@ -76,7 +71,7 @@ class SupervisedTask(Task):
 
     def set_dataset_labels(self):
         self._task_labels = False
-
+    
     @property
     def labels(self):
         if self._task_labels:
@@ -101,11 +96,13 @@ class SupervisedTask(Task):
     def data(self):
         return self.x, self.y
 
-    def y(self, split: DatasetSplits = None):
-        return self._map_labels(self.base_dataset.y(split))
+    @property
+    def y(self):
+        return self._map_labels(self.base_dataset.y)
 
-    def x(self, split: DatasetSplits = None):
-        return self.base_dataset.x(split)
+    @property
+    def x(self):
+        return self.base_dataset.x
 
     def __getitem__(self, item):
         i, x, y = super().__getitem__(item)
@@ -123,13 +120,19 @@ class UnsupervisedTransformerTask(Task):
                  test: [list, np.ndarray] = None,
                  dev: [list, np.ndarray] = None,
                  **kwargs):
+
         super().__init__(base_dataset=base_dataset,
                          train=train,
                          dev=dev,
                          test=test,
                          index=index,
                          **kwargs)
+
         self.transformer = transformer
+
+    @property
+    def x(self, split: DatasetSplits = None):
+        return list(map(self.transformer, super().x))
 
     def __getitem__(self, item):
         print(isinstance(self.base_dataset, UnsupervisedDataset))
@@ -163,8 +166,9 @@ class SupervisedTransformerTask(SupervisedTask):
 
         self.transformer = transformer
 
+    @property
     def x(self, split: DatasetSplits = None):
-        return list(map(self.transformer, super().x(split)))
+        return list(map(self.transformer, super().x))
 
     def __getitem__(self, item):
         i, x, y = super().__getitem__(item)

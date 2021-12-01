@@ -17,7 +17,6 @@ class StreamDataset(ABC):
 class DomainIncremental(ABC):
     def __init__(self,
                  dataset: Union[SupervisedDataset, UnsupervisedDataset],
-                 shuffle_datasets: bool = False,
                  random_state: Union[np.random.RandomState, int] = None,
                  **kwargs):
 
@@ -29,30 +28,40 @@ class DomainIncremental(ABC):
         else:
             random_state = np.random.RandomState(None)
 
-        self._tasks = self.generate_tasks(dataset=dataset,
-                                          shuffle_datasets=shuffle_datasets,
-                                          random_state=random_state,
-                                          **kwargs)
-        if shuffle_datasets:
-            random_state.shuffle(self._tasks)
+        self.dataset = dataset
+        self.random_state = random_state
+
+    # @abstractmethod
+    # def generate_tasks(self, dataset: Union[UnsupervisedDataset,
+    #                                         SupervisedDataset],
+    #                    random_state: Union[np.random.RandomState, int] = None,
+    #                    **kwargs) \
+    #         -> List[Type[Task]]:
+    #     raise NotImplementedError
 
     @abstractmethod
-    def generate_tasks(self, dataset: Union[UnsupervisedDataset,
-                                            SupervisedDataset],
-                       random_state: Union[np.random.RandomState, int] = None,
-                       **kwargs) \
-            -> List[Type[Task]]:
+    def generate_task(self, dataset: Union[UnsupervisedDataset,
+                                           SupervisedDataset],
+                      random_state: Union[np.random.RandomState, int] = None,
+                      **kwargs) \
+            -> Union[Task, None]:
         raise NotImplementedError
 
+    @abstractmethod
     def __len__(self):
-        return len(self._tasks)
+        raise NotImplementedError
 
+    @abstractmethod
     def __getitem__(self, i: int):
-        return self._tasks[i]
+        raise NotImplementedError
 
+    @abstractmethod
     def __iter__(self):
-        for t in self._tasks:
-            yield t
+        raise NotImplementedError
+
+    @abstractmethod
+    def __next__(self):
+        raise NotImplementedError
 
 
 class IncrementalSupervisedProblem(ABC):
