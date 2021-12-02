@@ -6,7 +6,7 @@ from torchvision.transforms import ToTensor, RandomRotation, ToPILImage
 
 from continual_learning.datasets.base import UnsupervisedDataset, \
     SupervisedDataset
-from continual_learning.scenarios.base import DomainIncremental
+from continual_learning.scenarios.base import TasksGenerator
 from continual_learning.scenarios.tasks import SupervisedTransformerTask, \
     UnsupervisedTransformerTask
 
@@ -33,7 +33,7 @@ class RotationWrapper:
 
         return x
 
-class Rotation(DomainIncremental):
+class Rotation(TasksGenerator):
     def __init__(self, dataset: Union[UnsupervisedDataset, SupervisedDataset],
                  rotations_n: int,
                  rotations_degree: List[float] = None,

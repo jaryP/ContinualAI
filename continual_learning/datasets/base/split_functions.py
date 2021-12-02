@@ -8,7 +8,7 @@ from typing import Union, Tuple
 import numpy as np
 
 from continual_learning.datasets.base import SupervisedDataset, \
-    UnsupervisedDataset, DatasetSplits, DatasetSplitView
+    UnsupervisedDataset, DatasetSplits, DatasetSplitContexView
 
 
 def _get_balanced_index(y: Union[list, np.ndarray],

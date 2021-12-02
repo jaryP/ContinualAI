@@ -4,10 +4,10 @@ from typing import Union, List
 import numpy as np
 
 from continual_learning.datasets.base import IndexesContainer
-from continual_learning.scenarios.base import DomainIncremental
+from continual_learning.scenarios.base import TasksGenerator
 
 
-class GenericDataStream(DomainIncremental):
+class GenericDataStream(TasksGenerator):
     #TODO: Implementare test
     def __init__(self,
                  dataset: Union[Sequence[IndexesContainer], IndexesContainer],

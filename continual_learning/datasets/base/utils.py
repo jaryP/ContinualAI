@@ -9,10 +9,11 @@ import numpy as np
 from torch.utils.data import DataLoader
 
 from continual_learning.datasets.base import UnsupervisedDataset, \
-    SupervisedDataset, DatasetSplits
+    SupervisedDataset, DatasetSplits, IndexesContainer
+from continual_learning.datasets.base.base import AbstractDataset, IndexesType
 
 
-class DatasetSplitView(object):
+class DatasetSplitContexView(object):
     def __init__(self, dataset: Union[UnsupervisedDataset, SupervisedDataset],
                  split: DatasetSplits):
         self._dataset = dataset
@@ -238,3 +239,5 @@ class ConcatDataset:
     def current_split(self, v: DatasetSplits) -> None:
         for d in self.datasets:
             d.current_split = v
+
+

@@ -11,9 +11,8 @@ from torchvision.transforms import ToPILImage, ToTensor, Compose
 from continual_learning.datasets.base import UnsupervisedDataset, \
     SupervisedDataset, DatasetSplits
 from continual_learning.scenarios.base import IncrementalSupervisedProblem, \
-    DomainIncremental
-from continual_learning.scenarios.tasks import Task, \
-    UnsupervisedTransformerTask, SupervisedTransformerTask
+    TasksGenerator, Task
+from continual_learning.scenarios.tasks import UnsupervisedTransformerTask, SupervisedTransformerTask
 
 
 class PixelsPermutation(object):
@@ -37,7 +36,7 @@ class PixelsPermutation(object):
         return img
 
 
-class Permutation(DomainIncremental):
+class Permutation(TasksGenerator):
     def __init__(self, dataset: Union[UnsupervisedDataset, SupervisedDataset],
                  permutation_n: int,
                  shuffle_datasets: bool = False,

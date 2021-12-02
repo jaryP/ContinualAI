@@ -1,11 +1,10 @@
 import warnings
 
 from abc import ABC, abstractmethod
-from typing import Callable, Union, Tuple
+from typing import Callable, Union, Tuple, List, Any, Sequence
 
 import numpy as np
 from PIL import Image
-from torch.utils.data import DataLoader
 
 from . import DatasetSplits, DatasetType
 
@@ -51,8 +50,26 @@ class IndexesContainer(object):
         return self._current_split
 
     @current_split.setter
-    def current_split(self, v: DatasetSplits) -> None:
-        self._current_split = v
+    def current_split(self, v: Union[DatasetSplits, int, str]) -> None:
+        if isinstance(v, (str, int)):
+            v = DatasetSplits(v)
+
+        if v == DatasetSplits.TRAIN:
+            self.train()
+        elif v == DatasetSplits.TEST:
+            self.test()
+        elif v == DatasetSplits.DEV:
+            self.dev()
+        else:
+            self.all()
+
+    def get_split_len(self, v: DatasetSplits = None) -> int:
+        if v == DatasetSplits.ALL:
+            return sum(map(len, [v for v in self._splits.values()]))
+        if v is None:
+            return self.current_split
+
+        return len(self._splits[v])
 
     @property
     def current_indexes(self) -> np.ndarray:
@@ -68,22 +85,22 @@ class IndexesContainer(object):
         return self._splits[v]
 
     def train(self) -> None:
-        self.current_split = DatasetSplits.TRAIN
+        self._current_split = DatasetSplits.TRAIN
 
     def test(self) -> None:
-        self.current_split = DatasetSplits.TEST
+        self._current_split = DatasetSplits.TEST
         if len(self._splits[DatasetSplits.TEST]) == 0:
             warnings.warn('The dataset does not have Test split.',
                           RuntimeWarning)
 
     def dev(self) -> None:
-        self.current_split = DatasetSplits.DEV
+        self._current_split = DatasetSplits.DEV
         if len(self._splits[DatasetSplits.DEV]) == 0:
             warnings.warn('The dataset does not have Development split.',
                           RuntimeWarning)
 
     def all(self) -> None:
-        self.current_split = DatasetSplits.ALL
+        self._current_split = DatasetSplits.ALL
 
 
 class AbstractDataset(ABC, IndexesContainer):
@@ -127,52 +144,38 @@ class AbstractDataset(ABC, IndexesContainer):
             return self.test_transformer
 
     @abstractmethod
-    def __getitem__(self, item: Union[slice, int, list, np.ndarray]) -> \
+    def get_subset(self,
+                   train_subset: IndexesType,
+                   test_subset: IndexesType,
+                   dev_subset: IndexesType,
+                   **kwargs):
+        raise NotImplementedError
+        # return self.x(split)
+
+    @abstractmethod
+    def __getitem__(self, item: Union[tuple, slice, int, list, np.ndarray]) -> \
             Tuple[Union[list, tuple, int, list], Union[np.ndarray, list]]:
         raise NotImplementedError
 
-    def get_iterator(self, batch_size, shuffle=True, sampler=None,
-                     num_workers=0, pin_memory=False):
-        return DataLoader(self, batch_size=batch_size, shuffle=shuffle,
-                          sampler=sampler, pin_memory=pin_memory,
-                          num_workers=num_workers)
-
+    @property
     @abstractmethod
     def data(self, split: DatasetSplits = None):
         raise NotImplementedError
         # return self.x(split)
 
     @property
+    @abstractmethod
     def x(self) -> np.ndarray:
-        raise AttributeError('The dataset does not have x property')
+        raise NotImplementedError
 
     @property
+    @abstractmethod
     def y(self) -> np.ndarray:
-        raise AttributeError('The dataset does not have y property')
+        raise NotImplementedError
 
-
-class DatasetView(object):
-    def __init__(self,
-                 dataset: AbstractDataset,
-                 split: DatasetSplits):
-
-        self._dataset = dataset
-        self._subset = dataset.get_indexes(split)
-
-    @property
-    def dataset(self):
-        return self.dataset
-
-    @property
-    def indexes(self):
-        return self._subset
-
-    def __len__(self) -> int:
-        return len(self._subset)
-
-    def __getitem__(self, item: Union[slice, int, list, np.ndarray]) -> \
-            Tuple[Union[list, tuple, int, list], Union[np.ndarray, list]]:
-        return self.dataset[self._subset[item]]
+    def __iter__(self):
+        for i in range(len(self)):
+            yield self[i]
 
 
 class UnsupervisedDataset(AbstractDataset):
@@ -198,7 +201,7 @@ class UnsupervisedDataset(AbstractDataset):
         :param images_path: the path from the root of the dataset, in which the images are stored.
         :param kwargs: Additional parameters.
         """
-        assert len(x) == sum(map(len, [train, test, dev]))
+        # assert len(x) == sum(map(len, [train, test, dev]))
 
         super().__init__(transformer=transformer,
                          test_transformer=test_transformer,
@@ -206,13 +209,13 @@ class UnsupervisedDataset(AbstractDataset):
                          test=test,
                          dev=dev,
                          is_path_dataset=is_path_dataset,
-                         images_path = images_path,
+                         images_path=images_path,
                          **kwargs)
 
         self._x = x
 
     def __getitem__(self, item: Union[slice, int, list, np.ndarray]) -> \
-            Tuple[Union[list, tuple, int, list], Union[np.ndarray, list]]:
+            Tuple[Sequence[int], Sequence[Any]]:
 
         """
         Given an index, or a list of indexes (defined as list, tuple o slice), return the associated samples.
@@ -230,6 +233,7 @@ class UnsupervisedDataset(AbstractDataset):
                 item = list(range(s, e, step))
             elif isinstance(item, tuple):
                 item = list(item)
+
 
         idxs = self.current_indexes[item]
 
@@ -252,8 +256,35 @@ class UnsupervisedDataset(AbstractDataset):
     def x(self):
         return self._x[self.current_indexes]
 
+    @property
     def data(self, split: DatasetSplits = None):
         return self.x
+
+    def get_subset(self,
+                   train_subset: IndexesType,
+                   test_subset: IndexesType = None,
+                   dev_subset: IndexesType = None,
+                   **kwargs):
+
+        _train, _test, _dev = None, None, None
+
+        if len(train_subset) > 0:
+            _train = self.get_indexes(DatasetSplits.TRAIN)[train_subset]
+
+        if test_subset is not None and len(test_subset) > 0:
+            _test = self.get_indexes(DatasetSplits.TEST)[test_subset]
+
+        if dev_subset is not None and len(dev_subset) > 0:
+            _dev = self.get_indexes(DatasetSplits.DEV)[dev_subset]
+
+        return UnsupervisedDataset(x=self._x,
+                                   train=_train,
+                                   test=_test,
+                                   dev=_dev,
+                                   is_path_dataset=self.is_path_dataset,
+                                   images_path=self.images_path,
+                                   transformer=self.transformer,
+                                   test_transformer=self.test_transformer)
 
 
 class SupervisedDataset(UnsupervisedDataset):
@@ -308,9 +339,17 @@ class SupervisedDataset(UnsupervisedDataset):
         self.target_transformer = target_transformer \
             if target_transformer is not None else lambda z: z
 
-        self._labels = tuple(sorted(list(set(y))))
+        labels = set()
 
-    def __getitem__(self, item) -> Tuple[Union[list, tuple, int, list], np.ndarray, np.ndarray]:
+        for s in self._splits.values():
+            sy = y[s]
+            labels.update(list(sy))
+
+        self._labels = tuple(sorted(list(labels)))
+
+    def __getitem__(self, item: Union[slice, int, list, np.ndarray]) -> \
+            Tuple[Sequence[int], Sequence[Any], Sequence[Any]]:
+
         """
         Given an index, or a list of indexes (defined as list, tuple o slice), return the associated samples.
         :param item: The index, or more than one, used to fetch the samples in the dataset.
@@ -324,11 +363,13 @@ class SupervisedDataset(UnsupervisedDataset):
 
         item, x = super().__getitem__(item)
 
+        idx = self.current_indexes[item]
+
         if to_map:
             y = list(map(self.target_transformer,
-                         self._y[self.current_indexes[item]]))
+                         self._y[idx]))
         else:
-            y = self.target_transformer(self._y[self.current_indexes[item]])
+            y = self.target_transformer(self._y[idx])
 
         return item, x, y
 
@@ -343,12 +384,49 @@ class SupervisedDataset(UnsupervisedDataset):
     def y(self):
         return self._y[self.current_indexes]
 
+    @property
     def data(self, split: DatasetSplits = None):
         return self.x, self.y
 
-    def preprocess_targets(self, f: Callable):
-        """
-        Apply the input function f to the current labels in the split.
-        :param f: The callable function: f(x).
-        """
-        self._y = f(self._y)
+    def get_subset(self,
+                   train_subset: IndexesType,
+                   test_subset: IndexesType = None,
+                   dev_subset: IndexesType = None,
+                   **kwargs):
+
+        _train, _test, _dev = None, None, None
+        # all_indexes = []
+
+        if len(train_subset) > 0:
+            _train = self.get_indexes(DatasetSplits.TRAIN)[train_subset]
+            # all_indexes.extend(_train)
+
+        if test_subset is not None and len(test_subset) > 0:
+            _test = self.get_indexes(DatasetSplits.TEST)[test_subset]
+            # all_indexes.extend(_test)
+
+        if dev_subset is not None and len(dev_subset) > 0:
+            _dev = self.get_indexes(DatasetSplits.DEV)[dev_subset]
+            # all_indexes.extend(_dev)
+
+        # _train, _test, _dev = np.asarray(_train),\
+        #                       np.asarray(_test), \
+        #                       np.asarray(_dev)
+        #
+        # all_indexes = np.concatenate((_train, _test, _dev), 1)
+
+        # x = self._x[all_indexes]
+        # y = self._y[all_indexes]
+        # input(x.base is self._x)
+        # input(y.base is self._y)
+
+        return SupervisedDataset(x=self._x,
+                                 y=self._y,
+                                 train=_train,
+                                 test=_test,
+                                 dev=_dev,
+                                 is_path_dataset=self.is_path_dataset,
+                                 images_path=self.images_path,
+                                 transformer=self.transformer,
+                                 target_transformer=self.target_transformer,
+                                 test_transformer=self.test_transformer)
