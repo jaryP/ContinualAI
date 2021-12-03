@@ -312,7 +312,8 @@ class SupervisedDataset(UnsupervisedDataset):
                  dev=None,
                  transformer: Callable = None,
                  test_transformer: Callable = None,
-                 target_transformer: Callable = None, **kwargs):
+                 target_transformer: Callable = None,
+                 **kwargs):
 
         """
         :param x: The samples of the dataset.

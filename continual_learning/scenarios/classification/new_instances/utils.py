@@ -8,7 +8,7 @@ from continual_learning.scenarios.base import TasksGenerator, Task
 from continual_learning.scenarios.tasks import TransformerTask
 
 
-class GenericTransformingScenario(TasksGenerator):
+class NITransformingScenario(TasksGenerator):
     def __init__(self,
                  dataset: Union[SupervisedDataset, UnsupervisedDataset],
                  transform_factory: Callable[[Any], Callable],
@@ -31,7 +31,7 @@ class GenericTransformingScenario(TasksGenerator):
                              f'{type(transformation_parameters)}')
         else:
             if tasks_n < 0:
-                raise ValueError(f'Argument tasks_n=True must be '
+                raise ValueError(f'Argument tasks_n must be '
                                  f'greater than 0 '
                                  f'{type(tasks_n)}')
 
@@ -42,7 +42,7 @@ class GenericTransformingScenario(TasksGenerator):
                                               self.random_state)
                     for task in range(tasks_n)]
 
-        self.infinite_stream = infinite_stream or infinite_stream
+        self.infinite_stream = infinite_stream
         self.lazy_initialization = lazy_initialization
 
         self.parameters = transformation_parameters

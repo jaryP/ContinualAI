@@ -1,3 +1,3 @@
 from .ni_scenarios import ImageRotationScenario, \
     PixelsPermutationScenario
-from .utils import GenericTransformingScenario
+from .utils import NITransformingScenario

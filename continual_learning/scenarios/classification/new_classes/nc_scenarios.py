@@ -5,13 +5,14 @@ import numpy as np
 
 from continual_learning.datasets.base import UnsupervisedDataset, \
     SupervisedDataset
-# from continual_learning.scenarios.base import DomainIncremental, Task
-# from continual_learning.scenarios.utils import \
-#     ImageRotation, PixelsPermutation
+
 from continual_learning.scenarios.base import TasksGenerator
+from continual_learning.scenarios.classification.new_classes import \
+    NCTransformingScenario
 from continual_learning.scenarios.classification.utils import \
     get_dataset_subset_using_labels
 from continual_learning.scenarios.tasks import TransformerTask, SupervisedTask
+from continual_learning.scenarios.utils import ImageRotation, PixelsPermutation
 
 
 class NCScenario(TasksGenerator):
@@ -243,51 +244,65 @@ class NCScenario(TasksGenerator):
 
             yield t
 
-# class ImageRotationScenario(GenericTransformingScenario):
-#     def __init__(self,
-#                  dataset: Union[SupervisedDataset, UnsupervisedDataset],
-#                  tasks_n: int,
-#                  transformation_parameters: Union[List[any],
-#                                                   Callable[[Any], Any]],
-#                  infinite_stream: bool = False,
-#                  random_state: Union[np.random.RandomState, int] = None,
-#                  lazy_initialization: bool = True,
-#                  **kwargs):
-#         transform_function = self.get_rotation
-#
-#         super().__init__(dataset=dataset,
-#                          tasks_n=tasks_n,
-#                          transform_factory=transform_function,
-#                          transformation_parameters=transformation_parameters,
-#                          infinite_stream=infinite_stream,
-#                          random_state=random_state,
-#                          lazy_initialization=lazy_initialization,
-#                          **kwargs)
-#
-#     def get_rotation(self, degree, **kwargs):
-#         return ImageRotation(degree)
-#
-#
-# class PixelsPermutationScenario(GenericTransformingScenario):
-#     def __init__(self,
-#                  dataset: Union[SupervisedDataset, UnsupervisedDataset],
-#                  tasks_n: int,
-#                  transformation_parameters: Union[List[any],
-#                                                   Callable[[Any], Any]],
-#                  infinite_stream: bool = False,
-#                  random_state: Union[np.random.RandomState, int] = None,
-#                  lazy_initialization: bool = True,
-#                  **kwargs):
-#         transform_factory = self.get_permutation
-#
-#         super().__init__(dataset=dataset,
-#                          tasks_n=tasks_n,
-#                          transform_factory=transform_factory,
-#                          transformation_parameters=transformation_parameters,
-#                          infinite_stream=infinite_stream,
-#                          random_state=random_state,
-#                          lazy_initialization=lazy_initialization,
-#                          **kwargs)
-#
-#     def get_permutation(self, permutation, **kwargs):
-#         return PixelsPermutation(permutation)
+
+class ImageRotationScenario(NCTransformingScenario):
+    def __init__(self,
+                 dataset: Union[SupervisedDataset, UnsupervisedDataset],
+                 tasks_n: int,
+                 transformation_parameters: Union[List[any],
+                                                  Callable[[Any], Any]],
+                 # infinite_stream: bool = False,
+                 random_state: Union[np.random.RandomState, int] = None,
+                 lazy_initialization: bool = True,
+                 labels_task_mapping: Dict[int, Union[int, list]] = None,
+                 remap_labels_across_task: bool = False,
+
+                 **kwargs):
+
+        transform_function = self.get_rotation
+
+        super().__init__(dataset=dataset,
+                         tasks_n=tasks_n,
+                         transform_factory=transform_function,
+                         transformation_parameters=transformation_parameters,
+                         # infinite_stream=infinite_stream,
+                         random_state=random_state,
+                         lazy_initialization=lazy_initialization,
+                         labels_task_mapping=labels_task_mapping,
+                         remap_labels_across_task=remap_labels_across_task,
+                         **kwargs)
+
+    def get_rotation(self, degree, **kwargs):
+        return ImageRotation(degree)
+
+
+class PixelsPermutationScenario(NCTransformingScenario):
+    def __init__(self,
+                 dataset: Union[SupervisedDataset, UnsupervisedDataset],
+                 tasks_n: int,
+                 transformation_parameters: Union[List[any],
+                                                  Callable[[Any], Any]],
+                 # infinite_stream: bool = False,
+                 random_state: Union[np.random.RandomState, int] = None,
+                 lazy_initialization: bool = True,
+                 labels_task_mapping: Dict[int, Union[int, list]] = None,
+                 remap_labels_across_task: bool = False,
+
+                 **kwargs):
+
+        transform_factory = self.get_permutation
+
+        super().__init__(dataset=dataset,
+                         tasks_n=tasks_n,
+                         transform_factory=transform_factory,
+                         transformation_parameters=transformation_parameters,
+                         # infinite_stream=infinite_stream,
+                         random_state=random_state,
+                         lazy_initialization=lazy_initialization,
+                         labels_task_mapping=labels_task_mapping,
+                         remap_labels_across_task=remap_labels_across_task,
+                         **kwargs)
+
+    def get_permutation(self, permutation, **kwargs):
+        return PixelsPermutation(permutation)
+
