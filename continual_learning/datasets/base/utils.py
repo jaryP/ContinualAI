@@ -9,7 +9,24 @@ import numpy as np
 from torch.utils.data import DataLoader
 
 from continual_learning.datasets.base import UnsupervisedDataset, \
-    SupervisedDataset, DatasetSplits
+    SupervisedDataset, DatasetSplits, IndexesContainer
+from continual_learning.datasets.base.base import AbstractDataset, IndexesType
+
+
+class DatasetSplitContexView(object):
+    def __init__(self, dataset: Union[UnsupervisedDataset, SupervisedDataset],
+                 split: DatasetSplits):
+        self._dataset = dataset
+        self._current_split = dataset.current_split
+        self._split = split
+
+    def __enter__(self):
+        self._dataset.current_split = self._split
+        return self._dataset
+
+    def __exit__(self, type, value, traceback):
+        self._dataset.current_split = self._current_split
+        return True
 
 
 class DownloadableDataset(ABC):
@@ -73,12 +90,17 @@ class UnsupervisedDownloadableDataset(DownloadableDataset,
                  transformer: Callable = None,
                  target_transformer: Callable = None,
                  **kwargs):
+
         super().__init__(name=name,
                          transformer=transformer,
                          download_if_missing=download_if_missing,
                          data_folder=data_folder)
 
         x, (train, test, dev) = self.load_dataset()
+
+        if kwargs.get('is_path_dataset', False):
+            kwargs['images_path'] = os.path.join(self.data_folder,
+                                                 kwargs['images_path'])
 
         super(DownloadableDataset, self).__init__(x=x,
                                                   train=train,
@@ -104,6 +126,7 @@ class SupervisedDownloadableDataset(DownloadableDataset, SupervisedDataset,
                  test_transformer: Callable = None,
                  target_transformer: Callable = None,
                  **kwargs):
+
         super().__init__(name=name,
                          transformer=transformer,
                          download_if_missing=download_if_missing,
@@ -116,8 +139,11 @@ class SupervisedDownloadableDataset(DownloadableDataset, SupervisedDataset,
             kwargs['images_path'] = os.path.join(self.data_folder,
                                                  kwargs['images_path'])
 
-        super(DownloadableDataset, self).__init__(x=x, y=y, train=train,
-                                                  test=test, dev=dev,
+        super(DownloadableDataset, self).__init__(x=x,
+                                                  y=y,
+                                                  train=train,
+                                                  test=test,
+                                                  dev=dev,
                                                   transformer=transformer,
                                                   target_transformer=
                                                   target_transformer,
@@ -213,3 +239,5 @@ class ConcatDataset:
     def current_split(self, v: DatasetSplits) -> None:
         for d in self.datasets:
             d.current_split = v
+
+

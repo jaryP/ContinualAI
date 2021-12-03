@@ -20,23 +20,36 @@ def get_version(rel_path):
         raise RuntimeError("Unable to find version string.")
 
 
+try:
+    with open('README.md') as file:
+        long_description = file.read()  # now assign long_description=long_description below
+except IOError:  # file not found
+    pass
+
+
 setuptools.setup(
     name='continual_learning',
     version=get_version("continual_learning/__init__.py"),
     author="Jary Pomponi",
     author_email="jarypomponi@gmail.org",
     description="A base CL framework to speed-up prototyping and testing",
-    long_description=read("README.md"),
+    long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/jaryP/ContinualAI",
     packages=setuptools.find_packages(),
     classifiers=[
+        "Intended Audience :: Science/Research",
+        "Intended Audience :: Education",
+        "Intended Audience :: Other Audience",
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
         "Development Status :: 1 - Planning",
-        "Topic :: Scientific/Engineering :: Artificial Intelligence"
+        "Topic :: Scientific/Engineering",
+        "Topic :: Scientific/Engineering :: Artificial Intelligence",
+        "Environment :: Console",
     ],
+    keywords=["continual learning"],
     python_requires='>=3.7',
     install_requires=[
         'torch',

@@ -1,66 +1,24 @@
-from typing import Union, Callable
+__all__ = ['SupervisedTask',
+           'SupervisedTransformerTask',
+           'TransformerTask']
 
-import numpy as np
-from torch.utils.data import DataLoader
+from typing import Union, Callable, Any
 
-from continual_learning.datasets.base import IndexesContainer, \
-    UnsupervisedDataset, SupervisedDataset, DatasetSplits
-
-
-class Task(IndexesContainer):
-    def __init__(self,
-                 *,
-                 base_dataset: Union[UnsupervisedDataset, SupervisedDataset],
-                 index: int,
-                 train: Union[list, np.ndarray],
-                 test: [list, np.ndarray] = None,
-                 dev: [list, np.ndarray] = None,
-                 **kwargs):
-        super().__init__(train=train, dev=dev, test=test, **kwargs)
-
-        self.base_dataset = base_dataset
-        self.index = index
-
-    def __getitem__(self, item):
-        idx = self.current_indexes
-        i = idx[item]
-        return self.base_dataset[i]
-
-    @IndexesContainer.current_split.setter
-    def current_split(self, v: DatasetSplits) -> None:
-        self._current_split = v
-        self.base_dataset.current_split = v
-
-    def get_iterator(self,
-                     batch_size: int,
-                     shuffle: bool = True,
-                     sampler=None,
-                     num_workers: int = 0,
-                     pin_memory: bool = False):
-        return DataLoader(self,
-                          batch_size=batch_size,
-                          shuffle=shuffle,
-                          sampler=sampler,
-                          pin_memory=pin_memory,
-                          num_workers=num_workers)
+from continual_learning.datasets.base import UnsupervisedDataset, \
+    SupervisedDataset, DatasetSplits
+from continual_learning.scenarios.base import Task
 
 
 class SupervisedTask(Task):
     def __init__(self,
                  *,
                  base_dataset: SupervisedDataset,
-                 index: int,
+                 task_index: int,
                  labels_mapping: dict,
-                 train: Union[list, np.ndarray],
-                 test: [list, np.ndarray] = None,
-                 dev: [list, np.ndarray] = None,
                  **kwargs):
 
-        super().__init__(index=index,
+        super().__init__(task_index=task_index,
                          base_dataset=base_dataset,
-                         train=train,
-                         dev=dev,
-                         test=test,
                          **kwargs)
 
         self._task_labels = True
@@ -72,12 +30,18 @@ class SupervisedTask(Task):
     def set_dataset_labels(self):
         self._task_labels = False
 
+    def get_task_labels(self):
+        return list(self.labels_mapping.values())
+
+    def get_dataset_labels(self):
+        return list(self.labels_mapping.keys())
+
     @property
     def labels(self):
         if self._task_labels:
-            return list(self.labels_mapping.values())
+            return self.get_task_labels()
         else:
-            return list(self.labels_mapping.keys())
+            return self.get_dataset_labels()
 
     def _map_labels(self, y):
         if self.labels_mapping is None:
@@ -87,7 +51,6 @@ class SupervisedTask(Task):
             if not isinstance(y, list):
                 return self.labels_mapping[y]
             else:
-            # if self._task_labels:
                 y = [self.labels_mapping[i] for i in y]
 
         return y
@@ -96,43 +59,69 @@ class SupervisedTask(Task):
     def data(self):
         return self.x, self.y
 
-    def y(self, split: DatasetSplits = None):
-        return self._map_labels(self.base_dataset.y(split))
+    @property
+    def y(self):
+        return self._map_labels(self.base_dataset.y)
 
-    def x(self, split: DatasetSplits = None):
-        return self.base_dataset.x(split)
+    @property
+    def x(self):
+        return self.base_dataset.x
+
+    def __len__(self):
+        return len(self.base_dataset)
 
     def __getitem__(self, item):
-        i, x, y = super().__getitem__(item)
+        i, x, y = self.base_dataset[item]
         y = self._map_labels(y)
         return i, x, y
 
 
-class UnsupervisedTransformerTask(Task):
+class TransformerTask(Task):
     def __init__(self,
                  *,
-                 base_dataset: UnsupervisedDataset,
-                 transformer: Callable,
-                 index: int,
-                 train: Union[list, np.ndarray],
-                 test: [list, np.ndarray] = None,
-                 dev: [list, np.ndarray] = None,
+                 base_dataset: Union[UnsupervisedDataset, SupervisedDataset,
+                                     Task],
+                 transformer: Callable[[Any], Any],
+                 task_index: int,
                  **kwargs):
+
+        train, dev, test = [base_dataset.get_indexes(DatasetSplits(v))
+                            for v in ['train', 'dev', 'test']]
+
         super().__init__(base_dataset=base_dataset,
                          train=train,
                          dev=dev,
                          test=test,
-                         index=index,
+                         task_index=task_index,
                          **kwargs)
+
         self.transformer = transformer
 
+    def __len__(self):
+        return len(self.base_dataset)
+
+    @property
+    def x(self):
+        return list(map(self.transformer, self.base_dataset.x))
+
     def __getitem__(self, item):
-        print(isinstance(self.base_dataset, UnsupervisedDataset))
-        i, x = super().__getitem__(item)
+        y = None
+
+        a = super().__getitem__(item)
+
+        if len(a) == 3:
+            i, x, y = a
+        else:
+            i, x = a
+
         if isinstance(i, list):
             x = list(map(self.transformer, x))
         else:
             x = self.transformer(x)
+
+        if y is not None:
+            return i, x, y
+
         return i, x
 
 
@@ -140,31 +129,28 @@ class SupervisedTransformerTask(SupervisedTask):
     def __init__(self,
                  *,
                  base_dataset: SupervisedDataset,
-                 transformer: Callable,
-                 index: int,
+                 transformer: Callable[[Any], Any],
+                 task_index: int,
                  labels_mapping: Union[dict, None],
-                 train: Union[list, np.ndarray],
-                 test: [list, np.ndarray] = None,
-                 dev: [list, np.ndarray] = None,
                  **kwargs):
 
         super().__init__(base_dataset=base_dataset,
+                         task_index=task_index,
                          labels_mapping=labels_mapping,
-                         train=train,
-                         dev=dev,
-                         test=test,
-                         index=index,
                          **kwargs)
 
         self.transformer = transformer
 
+    @property
     def x(self, split: DatasetSplits = None):
-        return list(map(self.transformer, super().x(split)))
+        return list(map(self.transformer, super().x))
 
     def __getitem__(self, item):
         i, x, y = super().__getitem__(item)
+
         if isinstance(i, list):
             x = list(map(self.transformer, x))
         else:
             x = self.transformer(x)
+
         return i, x, y
