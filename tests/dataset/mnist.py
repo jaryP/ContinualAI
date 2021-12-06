@@ -3,8 +3,8 @@ import unittest
 from continual_learning.datasets import MNIST
 
 from continual_learning.datasets.base import create_dataset_with_dev_split, \
-    DatasetView, DatasetSplits, DatasetSplitContexView, create_dataset_with_new_split, \
-    SupervisedDataset, DatasetSubsetView
+    DatasetView, DatasetSplitContexView, create_dataset_with_new_split, \
+    SupervisedDataset, DatasetSubsetView, DatasetSplits
 from continual_learning.scenarios.classification.utils import \
     get_dataset_subset_using_labels
 

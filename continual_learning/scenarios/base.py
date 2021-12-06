@@ -29,13 +29,13 @@ class Task(ABC):
         self._base_dataset = base_dataset
         self.task_index = task_index
 
-    @abstractmethod
+    # @abstractmethod
     def __len__(self):
-        raise NotImplementedError
+        return len(self.base_dataset)
 
-    @abstractmethod
+    # @abstractmethod
     def __getitem__(self, item):
-        raise NotImplementedError
+        return self.base_dataset[item]
 
     @property
     def base_dataset(self):
@@ -70,6 +70,12 @@ class Task(ABC):
 
     def all(self) -> None:
         self.base_dataset.current_split = DatasetSplits.ALL
+
+    def get_split(self,
+                  split: DatasetSplits,
+                  **kwargs):
+        return self.base_dataset.get_split(split)
+
 
 
 class TasksGenerator(ABC):

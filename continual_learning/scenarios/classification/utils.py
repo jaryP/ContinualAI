@@ -1,7 +1,7 @@
 from typing import Union, Sequence
 
 from continual_learning.datasets.base import SupervisedDataset, \
-    DatasetSplits, DatasetSplitContexView
+    DatasetSplitContexView, DatasetSplits
 
 
 def get_dataset_subset_using_labels(dataset: SupervisedDataset,

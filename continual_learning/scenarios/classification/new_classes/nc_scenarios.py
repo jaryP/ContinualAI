@@ -109,18 +109,19 @@ class NCScenario(TasksGenerator):
                              f'Dataset labels: {dataset_labels}, '
                              f'given labels: {labels_task_mapping}')
 
-        if max(labels_task_mapping.keys()) > len(dataset_labels) - 1 \
-                or min(labels_task_mapping.keys()) < 0:
-            raise ValueError('Invalid key value in labels_task_mapping. '
-                             f'The keys must be in  '
-                             f'[0, {len(dataset_labels) - 1}] '
-                             f'({labels_task_mapping.keys()})')
+        if len(labels_task_mapping) > 0:
+            if max(labels_task_mapping.keys()) > len(dataset_labels) - 1 \
+                    or min(labels_task_mapping.keys()) < 0:
+                raise ValueError('Invalid key value in labels_task_mapping. '
+                                 f'The keys must be in  '
+                                 f'[0, {len(dataset_labels) - 1}] '
+                                 f'({labels_task_mapping.keys()})')
 
-        if max(labels_task_mapping.values()) >= tasks_n \
-                or min(labels_per_tasks.values()) < 0:
-            raise ValueError('Invalid value in labels_task_mapping. '
-                             f'The values must be in  [0, {tasks_n - 1}] '
-                             f'({labels_task_mapping.values()})')
+            if max(labels_task_mapping.values()) >= tasks_n \
+                    or min(labels_per_tasks.values()) < 0:
+                raise ValueError('Invalid value in labels_task_mapping. '
+                                 f'The values must be in  [0, {tasks_n - 1}] '
+                                 f'({labels_task_mapping.values()})')
 
         task_labels = {k: [] for k in range(tasks_n)}
 
@@ -190,7 +191,7 @@ class NCScenario(TasksGenerator):
         return self.tasks_n
 
     def __getitem__(self, i: int):
-        if i > len(self._tasks_generated):
+        if i >= len(self._tasks_generated):
             raise ValueError(f'Attempting to get a non generated task from '
                              f'the lazy created stream of tasks (index: {i})'
                              f'. Generate the task or set '
