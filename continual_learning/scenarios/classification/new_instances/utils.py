@@ -4,7 +4,7 @@ import numpy as np
 
 from continual_learning.datasets.base import SupervisedDataset, \
     UnsupervisedDataset
-from continual_learning.scenarios.base import TasksGenerator, Task
+from continual_learning.scenarios.base import TasksGenerator, AbstractTask
 from continual_learning.scenarios.tasks import TransformerTask
 
 
@@ -82,7 +82,7 @@ class NITransformingScenario(TasksGenerator):
 
         return self._tasks_generated[i]
 
-    def generate_task(self, **kwargs) -> Union[Task, None]:
+    def generate_task(self, **kwargs) -> Union[AbstractTask, None]:
 
         counter = len(self._tasks_generated)
 

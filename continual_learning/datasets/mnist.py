@@ -4,12 +4,13 @@ from os.path import join, exists
 from typing import Callable, Tuple
 from urllib.request import urlretrieve
 import numpy as np
-from continual_learning.datasets.base import SupervisedDownloadableDataset
 
 __all__ = ['MNIST', 'K49MNIST', 'KMNIST']
 
+from continual_learning.datasets.base import DownloadableDataset
 
-class MNIST(SupervisedDownloadableDataset):
+
+class MNIST(DownloadableDataset):
     url = {'train': {'images': 'http://yann.lecun.com/exdb/mnist/'
                                'train-images-idx3-ubyte.gz',
                      'labels': 'http://yann.lecun.com/exdb/mnist/'

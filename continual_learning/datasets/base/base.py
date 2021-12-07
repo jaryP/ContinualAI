@@ -241,8 +241,6 @@ class AbstractDataset(ABC, IndexesContainer):
             yield self[i]
 
 
-
-
 class UnsupervisedDataset(AbstractDataset):
 
     def __init__(self, x,
@@ -356,7 +354,7 @@ class UnsupervisedDataset(AbstractDataset):
                                    test_transformer=self.test_transformer)
 
 
-class SupervisedDataset(UnsupervisedDataset):
+class   SupervisedDataset(UnsupervisedDataset):
     """
     This class contains all the functions to operate with an _supervised dataset.
     It allows to use transformation (pytorch style) and to have all the dataset split (train, test, split) in one place.

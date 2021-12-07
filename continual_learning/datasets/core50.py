@@ -8,7 +8,7 @@ from zipfile import ZipFile
 
 import numpy as np
 
-from continual_learning.datasets.base import SupervisedDownloadableDataset
+from continual_learning.datasets.base import DownloadableDataset
 
 __all__ = ['Core50_128']
 

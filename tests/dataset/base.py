@@ -4,6 +4,7 @@ import numpy as np
 
 from continual_learning.datasets.base import BaseDataset, \
     DatasetSplitsContainer, create_dataset_with_new_split
+from continual_learning.scenarios.tasks import Task
 
 
 class base_test(unittest.TestCase):
@@ -104,3 +105,15 @@ class base_test(unittest.TestCase):
             splitted_dataset, dev_percentage=0.1)
 
         print(len(tr), len(te), len(de))
+
+    def test_da_elimiare(self):
+        x, y = self.get_dataset(100, target=True)
+        dataset = BaseDataset(values=x, transform=None)
+
+        task = Task(base_dataset=dataset, task_index=0,
+                    labels_mapping={i: i for i in set(y)})
+        dataset.get_subset([0, 1])
+
+        task.get_subset([0, 1])
+
+        a = task.current_split

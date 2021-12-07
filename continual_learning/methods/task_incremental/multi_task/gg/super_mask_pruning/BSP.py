@@ -11,7 +11,7 @@ from continual_learning.methods.task_incremental.multi_task.gg.\
     mask_training, get_masks_from_gradients, ForwardHook
 from continual_learning.methods.task_incremental.multi_task.gg.\
     super_mask_pruning.base.layer import EnsembleMaskedWrapper
-from continual_learning.scenarios.tasks import SupervisedTask
+from continual_learning.scenarios.tasks import Task
 from continual_learning.solvers.multi_task import MultiHeadsSolver
 
 
@@ -92,7 +92,7 @@ class SuperMask(BaseMultiTaskGGMethod):
     def set_task(self,
                  backbone: nn.Module,
                  solver: MultiHeadsSolver,
-                 task: SupervisedTask,
+                 task: Task,
                  invert_masks=False,
                  **kwargs):
 
@@ -127,7 +127,7 @@ class SuperMask(BaseMultiTaskGGMethod):
     def on_task_starts(self,
                        backbone: nn.Module,
                        solver: MultiHeadsSolver,
-                       task: SupervisedTask,
+                       task: Task,
                        **kwargs):
 
         # self.set_task(task_i=task_i, network=network, invert_masks=True)
@@ -193,7 +193,7 @@ class SuperMask(BaseMultiTaskGGMethod):
 
     def after_gradient_calculation(self,
                                    backbone: nn.Module,
-                                   task: SupervisedTask,
+                                   task: Task,
                                    **kwargs):
         current_task = task.index
         for name, module in backbone.named_modules():

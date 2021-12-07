@@ -5,7 +5,7 @@ from continual_learning.methods.task_incremental.multi_task.gg import \
     BaseMultiTaskGGMethod
 from continual_learning.methods.task_incremental.multi_task.gg.\
     batch_ensemble.base import BElayer
-from continual_learning.scenarios.tasks import SupervisedTask
+from continual_learning.scenarios.tasks import Task
 from continual_learning.solvers.base import Solver
 
 
@@ -38,7 +38,7 @@ class BatchEnsemble(BaseMultiTaskGGMethod):
         #         setattr(model, name, BElayer(l))
 
     def get_parameters(self,
-                       task: SupervisedTask,
+                       task: Task,
                        backbone: nn.Module,
                        solver: Solver,
                        **kwargs):
@@ -60,7 +60,7 @@ class BatchEnsemble(BaseMultiTaskGGMethod):
 
     def set_task(self,
                  backbone: nn.Module,
-                 task: SupervisedTask,
+                 task: Task,
                  **kwargs):
         task_i = task.index
         for n, m in backbone.named_modules():
@@ -69,7 +69,7 @@ class BatchEnsemble(BaseMultiTaskGGMethod):
 
     def on_task_starts(self,
                        backbone: nn.Module,
-                       task: SupervisedTask,
+                       task: Task,
                        **kwargs):
         task_i = task.index
         for n, m in backbone.named_modules():

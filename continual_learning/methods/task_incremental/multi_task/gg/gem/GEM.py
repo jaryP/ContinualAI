@@ -11,7 +11,7 @@ from continual_learning.methods.task_incremental.multi_task.gg\
     import BaseMultiTaskGGMethod
 from continual_learning.methods.task_incremental.multi_task.gg.gem.utils\
     import qp
-from continual_learning.scenarios.tasks import SupervisedTask
+from continual_learning.scenarios.tasks import Task
 
 
 class GradientEpisodicMemory(BaseMultiTaskGGMethod):
@@ -45,7 +45,7 @@ class GradientEpisodicMemory(BaseMultiTaskGGMethod):
         self.task_memory = []
         self.loss_f = nn.CrossEntropyLoss(reduction='mean')
 
-    def on_task_ends(self, task: SupervisedTask, encoder: torch.nn.Module, *args, **kwargs):
+    def on_task_ends(self, task: Task, encoder: torch.nn.Module, *args, **kwargs):
 
         task.train()
 

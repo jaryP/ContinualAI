@@ -4,7 +4,7 @@ from torch import nn
 
 from continual_learning.methods.task_incremental.multi_task.gg\
     import BaseMultiTaskGGMethod
-from continual_learning.scenarios.tasks import SupervisedTask
+from continual_learning.scenarios.tasks import Task
 
 
 class SingleTask(BaseMultiTaskGGMethod):
@@ -12,7 +12,7 @@ class SingleTask(BaseMultiTaskGGMethod):
         super().__init__()
         self.tasks_dict = {}
 
-    def on_task_starts(self, backbone: nn.Module, task: SupervisedTask, *args, **kwargs):
+    def on_task_starts(self, backbone: nn.Module, task: Task, *args, **kwargs):
         def reset(module):
             for layer in module.children():
                 if hasattr(layer, 'reset_parameters'):
@@ -21,13 +21,13 @@ class SingleTask(BaseMultiTaskGGMethod):
                     reset(layer)
         reset(backbone)
 
-    def on_task_ends(self, backbone: nn.Module, task: SupervisedTask, *args, **kwargs):
+    def on_task_ends(self, backbone: nn.Module, task: Task, *args, **kwargs):
         task_i = task.index
         sd = deepcopy(backbone.state_dict())
         self.tasks_dict[task_i] = sd
         # self.tasks_dict[task.index] = backbone.state_dict().copy()
 
-    def set_task(self, backbone: nn.Module, task: SupervisedTask,  **kwargs):
+    def set_task(self, backbone: nn.Module, task: Task, **kwargs):
         task_i = task.index
         if task_i in self.tasks_dict:
             backbone.load_state_dict(self.tasks_dict[task_i])

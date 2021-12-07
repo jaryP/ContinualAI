@@ -11,7 +11,7 @@ from continual_learning.scenarios.classification.new_classes import \
     NCTransformingScenario
 from continual_learning.scenarios.classification.utils import \
     get_dataset_subset_using_labels
-from continual_learning.scenarios.tasks import TransformerTask, SupervisedTask
+from continual_learning.scenarios.tasks import TransformerTask, Task
 from continual_learning.scenarios.utils import ImageRotation, PixelsPermutation
 
 
@@ -200,7 +200,7 @@ class NCScenario(TasksGenerator):
 
         return self._tasks_generated[i]
 
-    def generate_task(self, **kwargs) -> Union[SupervisedTask, None]:
+    def generate_task(self, **kwargs) -> Union[Task, None]:
 
         counter = len(self._tasks_generated)
 
@@ -219,9 +219,9 @@ class NCScenario(TasksGenerator):
         labels_map = self.labels_mapping[counter]
 
         dataset = get_dataset_subset_using_labels(self.dataset, labels=labels)
-        task = SupervisedTask(base_dataset=dataset,
-                              labels_mapping=labels_map,
-                              task_index=counter)
+        task = Task(base_dataset=dataset,
+                    labels_mapping=labels_map,
+                    task_index=counter)
 
         # task = TransformerTask(base_dataset=self.dataset, transformer=t,
         #                        index=counter)

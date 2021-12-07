@@ -8,11 +8,12 @@ import numpy as np
 
 from urllib.request import urlretrieve
 
-from continual_learning.datasets.base import SupervisedDownloadableDataset
+from continual_learning.datasets.base import DownloadableDataset
 
 __all__ = ['TinyImagenet']
 
-class TinyImagenet(SupervisedDownloadableDataset):
+
+class TinyImagenet(DownloadableDataset):
     url = 'http://cs231n.stanford.edu/tiny-imagenet-200.zip'
 
     def __init__(self,

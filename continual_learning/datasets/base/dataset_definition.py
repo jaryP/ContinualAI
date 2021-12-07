@@ -1,5 +1,7 @@
 import warnings
 from abc import abstractmethod, ABC
+from os import makedirs
+from os.path import exists, join, dirname
 
 from typing import Callable, Union, Tuple, List, Any, Sequence, Type, TypeVar
 
@@ -11,6 +13,9 @@ D = TypeVar('D', bound='AbstractDataset')
 
 
 class AbstractDataset(ABC):
+
+    def __init__(self):
+        self.dataset_type = None
 
     @property
     @abstractmethod
@@ -51,6 +56,8 @@ class BaseDataset(AbstractDataset):
                  images_path: str = None,
                  path_loading_function: Callable = None,
                  **kwargs):
+
+        super(BaseDataset, self).__init__()
 
         if is_path_dataset and images_path is None:
             raise ValueError('If is_path_dataset=True, '
@@ -94,8 +101,6 @@ class BaseDataset(AbstractDataset):
     def targets(self):
         if self.dataset_type != DatasetType.SUPERVISED:
             return None
-            # warnings.warn('The dataset is not supervised.',
-            #               RuntimeWarning)
         return self._targets
 
     def __len__(self):
@@ -143,6 +148,9 @@ class BaseDataset(AbstractDataset):
     def get_subset(self,
                    subset: IndexesType,
                    **kwargs) -> D:
+
+        if subset is None or len(subset) == 0:
+            raise ValueError('The parameter subset is empty or None.')
 
         return DatasetSubset(values=self._values,
                              subset=subset,
@@ -238,7 +246,7 @@ class DatasetSplitsContainer(AbstractDataset):
                  **kwargs):
 
         def _duplicate_check(l: Sequence):
-            return len(set(l)) == len(l)
+            return len(set(l)) != len(l)
 
         if transform is not None and test_transform is None:
             raise ValueError('Train transform provided '
@@ -335,7 +343,7 @@ class DatasetSplitsContainer(AbstractDataset):
             self.dev()
 
     @property
-    def current_dataset(self) :
+    def current_dataset(self):
         return self._splits[self.current_split]
 
     @property
@@ -393,6 +401,12 @@ class DatasetSplitsContainer(AbstractDataset):
         if dev_subset is None:
             dev_subset = []
 
+        if len(train_subset) == 0 \
+                and len(test_subset) == 0 \
+                and len(dev_subset) == 0:
+            raise ValueError('One of train_subset, test_subset and dev_subset '
+                             'must be not None (or non empty sequence).')
+
         train = self.train_split().get_subset(train_subset)
         test = self.test_split().get_subset(test_subset)
         dev = self.dev_split().get_subset(dev_subset)
@@ -417,3 +431,86 @@ class DatasetSplitsContainer(AbstractDataset):
     def __iter__(self):
         for i in range(len(self)):
             yield self[i]
+
+
+class DownloadableDataset(DatasetSplitsContainer, ABC):
+
+    def __init__(self,
+                 *,
+                 name: str,
+
+                 transformer: Callable = None,
+                 test_transformer: Callable = None,
+                 target_transformer: Callable = None,
+
+                 download_if_missing: bool = True,
+                 data_folder: str = None,
+
+                 is_path_dataset: bool = False,
+                 images_path: str = None,
+                 path_loading_function: Callable = None,
+
+                 **kwargs):
+
+        if data_folder is None:
+            data_folder = join(dirname(__file__), 'downloaded_datasets', name)
+
+        self.data_folder = data_folder
+        self._name = name
+
+        self.transformer = transformer \
+            if transformer is not None else lambda x: x
+
+        missing = not self._check_exists()
+
+        if missing:
+            if not download_if_missing:
+                raise IOError("Data not found and "
+                              "`download_if_missing` is False")
+            else:
+                if not exists(self.data_folder):
+                    makedirs(self.data_folder)
+
+                print('Downloading dataset {}'.format(self.name))
+                self.download_dataset()
+
+        values, (train, test, dev) = self.load_dataset()
+
+        if isinstance(values, tuple):
+            x, y = values
+        else:
+            x = values
+            y = None
+
+        super().__init__(values=x,
+                         targets=y,
+                         train=train,
+                         test=test,
+                         dev=dev,
+                         transformer=transformer,
+                         target_transformer=
+                         target_transformer,
+                         test_transformer=
+                         test_transformer,
+                         is_path_dataset=is_path_dataset,
+                         images_path=images_path,
+                         path_loading_function=path_loading_function,
+                         **kwargs)
+
+    @property
+    def name(self):
+        return self._name
+
+    @abstractmethod
+    def download_dataset(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def _check_exists(self) -> bool:
+        raise NotImplementedError
+
+    @abstractmethod
+    def load_dataset(self) -> Tuple[Union[np.ndarray,
+                                          Tuple[np.ndarray, np.ndarray]],
+                                    Tuple[list, list, list]]:
+        raise NotImplementedError

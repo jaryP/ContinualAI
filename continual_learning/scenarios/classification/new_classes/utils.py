@@ -4,7 +4,7 @@ import numpy as np
 
 from continual_learning.datasets.base import SupervisedDataset, \
     UnsupervisedDataset
-from continual_learning.scenarios.base import TasksGenerator, Task
+from continual_learning.scenarios.base import TasksGenerator, AbstractTask
 from continual_learning.scenarios.classification.utils import \
     get_dataset_subset_using_labels
 from continual_learning.scenarios.tasks import SupervisedTransformerTask
@@ -181,7 +181,7 @@ class NCTransformingScenario(TasksGenerator):
         # else:
         return self.task_n
 
-    def __getitem__(self, i: int) -> Task:
+    def __getitem__(self, i: int) -> AbstractTask:
         if i > len(self._tasks_generated):
             # if self.infinite_stream:
             #     raise ValueError(f'Attempting to get a non generated task from '
@@ -198,7 +198,7 @@ class NCTransformingScenario(TasksGenerator):
 
         return self._tasks_generated[i]
 
-    def generate_task(self, **kwargs) -> Union[Task, None]:
+    def generate_task(self, **kwargs) -> Union[AbstractTask, None]:
 
         counter = len(self._tasks_generated)
 

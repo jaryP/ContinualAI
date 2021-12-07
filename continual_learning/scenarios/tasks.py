@@ -1,108 +1,126 @@
-__all__ = ['SupervisedTask',
+__all__ = ['Task',
            'SupervisedTransformerTask',
            'TransformerTask']
 
 from typing import Union, Callable, Any
-
-from continual_learning.datasets.base import UnsupervisedDataset, \
-    SupervisedDataset, DatasetSplits
-from continual_learning.scenarios.base import Task
+from continual_learning.datasets.base import AbstractDataset, DatasetType
+from continual_learning.scenarios.base import AbstractTask
 
 
-class SupervisedTask(Task):
+class Task(AbstractTask):
     def __init__(self,
                  *,
-                 base_dataset: SupervisedDataset,
+                 base_dataset: AbstractDataset,
                  task_index: int,
-                 labels_mapping: dict,
+                 labels_mapping: Union[dict, Callable[[Any], Any]] = None,
                  **kwargs):
 
         super().__init__(task_index=task_index,
                          base_dataset=base_dataset,
                          **kwargs)
 
+        self.is_supervised = base_dataset.dataset_type == DatasetType.SUPERVISED
         self._task_labels = True
         self.labels_mapping = labels_mapping
 
-    def set_task_labels(self):
+        self._task_classes = None
+        self._dataset_classes = base_dataset.classes
+
+        if self._dataset_classes is not None:
+            self._task_classes = self._map_labels(self._dataset_classes)
+
+    def use_task_labels(self):
         self._task_labels = True
 
-    def set_dataset_labels(self):
+    def use_dataset_labels(self):
         self._task_labels = False
 
-    def get_task_labels(self):
-        return list(self.labels_mapping.values())
-
-    def get_dataset_labels(self):
-        return list(self.labels_mapping.keys())
+    @property
+    def task_labels(self):
+        return self._task_classes
 
     @property
-    def labels(self):
+    def dataset_labels(self):
+        return self._dataset_classes
+
+    @property
+    def classes(self):
         if self._task_labels:
-            return self.get_task_labels()
+            return self.task_labels()
         else:
-            return self.get_dataset_labels()
+            return self.dataset_labels()
 
     def _map_labels(self, y):
         if self.labels_mapping is None:
             return y
 
-        if self._task_labels:
-            if not isinstance(y, list):
-                return self.labels_mapping[y]
-            else:
-                y = [self.labels_mapping[i] for i in y]
+        if isinstance(self.labels_mapping, dict):
+            if self._task_labels:
+                if not isinstance(y, list):
+                    y = self.labels_mapping[y]
+                else:
+                    y = [self.labels_mapping[i] for i in y]
+        else:
+            y = list(map(self.labels_mapping, y))
 
         return y
 
     @property
-    def data(self):
-        return self.x, self.y
+    def targets(self):
+        base_target = self.base_dataset.targets
+
+        if base_target is not None:
+            return self._map_labels(base_target)
+
+        return None
 
     @property
-    def y(self):
-        return self._map_labels(self.base_dataset.y)
-
-    @property
-    def x(self):
-        return self.base_dataset.x
+    def values(self):
+        return self.base_dataset.values
 
     def __len__(self):
         return len(self.base_dataset)
 
     def __getitem__(self, item):
-        i, x, y = self.base_dataset[item]
-        y = self._map_labels(y)
-        return i, x, y
+        y = None
+
+        a = self.base_dataset[item]
+
+        if len(a) == 3:
+            i, x, y = a
+            y = self._map_labels(y)
+
+        else:
+            i, x = a
+
+        if y is not None:
+            return i, x, y
+
+        return i, x
 
 
 class TransformerTask(Task):
     def __init__(self,
                  *,
-                 base_dataset: Union[UnsupervisedDataset, SupervisedDataset,
-                                     Task],
+                 base_dataset: AbstractDataset,
                  transformer: Callable[[Any], Any],
+                 labels_mapping: Union[dict, Callable[[Any], Any]] = None,
                  task_index: int,
                  **kwargs):
 
-        train, dev, test = [base_dataset.get_indexes(DatasetSplits(v))
-                            for v in ['train', 'dev', 'test']]
-
-        super().__init__(base_dataset=base_dataset,
-                         train=train,
-                         dev=dev,
-                         test=test,
-                         task_index=task_index,
+        super().__init__(task_index=task_index,
+                         base_dataset=base_dataset,
+                         labels_mapping=labels_mapping,
                          **kwargs)
 
         self.transformer = transformer
 
-    def __len__(self):
-        return len(self.base_dataset)
+    # def __len__(self):
+    #     return len(self.base_dataset)
 
     @property
-    def x(self):
-        return list(map(self.transformer, self.base_dataset.x))
+    def values(self):
+        return list(map(self.transformer, self.base_dataset.values))
 
     def __getitem__(self, item):
         y = None
@@ -125,10 +143,10 @@ class TransformerTask(Task):
         return i, x
 
 
-class SupervisedTransformerTask(SupervisedTask):
+class SupervisedTransformerTask(Task):
     def __init__(self,
                  *,
-                 base_dataset: SupervisedDataset,
+                 base_dataset: AbstractDataset,
                  transformer: Callable[[Any], Any],
                  task_index: int,
                  labels_mapping: Union[dict, None],
@@ -142,8 +160,8 @@ class SupervisedTransformerTask(SupervisedTask):
         self.transformer = transformer
 
     @property
-    def x(self, split: DatasetSplits = None):
-        return list(map(self.transformer, super().x))
+    def values(self):
+        return list(map(self.transformer, super().values))
 
     def __getitem__(self, item):
         i, x, y = super().__getitem__(item)
@@ -152,5 +170,7 @@ class SupervisedTransformerTask(SupervisedTask):
             x = list(map(self.transformer, x))
         else:
             x = self.transformer(x)
+
+        y = self._map_labels(y)
 
         return i, x, y

@@ -4,11 +4,11 @@ from urllib.request import urlretrieve
 import numpy as np
 from scipy import io
 
-from continual_learning.datasets.base import SupervisedDownloadableDataset
+from continual_learning.datasets.base import DownloadableDataset
 
 __all__ = ['SVHN']
 
-class SVHN(SupervisedDownloadableDataset):
+class SVHN(DownloadableDataset):
 
     url = {'train': {'images': "http://ufldl.stanford.edu/housenumbers/train_32x32.mat"},
            'test': {'images': "http://ufldl.stanford.edu/housenumbers/test_32x32.mat"}}

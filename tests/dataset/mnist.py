@@ -2,23 +2,15 @@ import numpy as np
 import unittest
 from continual_learning.datasets import MNIST
 
-from continual_learning.datasets.base import create_dataset_with_dev_split, \
-    DatasetView, DatasetSplitContexView, create_dataset_with_new_split, \
-    SupervisedDataset, DatasetSubsetView, DatasetSplits
-from continual_learning.scenarios.classification.utils import \
-    get_dataset_subset_using_labels
+# from continual_learning.datasets.base import create_dataset_with_dev_split, \
+#     DatasetView, DatasetSplitContexView, create_dataset_with_new_split, \
+#     SupervisedDataset, DatasetSubsetView, DatasetSplits
+# from continual_learning.scenarios.classification.utils import \
+#     get_dataset_subset_using_labels
+from continual_learning.datasets.base import DatasetSplits
 
 
 class mnist_tests(unittest.TestCase):
-    def test_classes(self):
-        dataset = MNIST(download_if_missing=True,
-                        data_folder='../downloaded_dataset/mnist/')
-
-        print(MNIST.mro())
-        print(isinstance(dataset, SupervisedDataset))
-        print(type(dataset))
-        print(super(MNIST))
-
     def test_loading(self):
         dataset = MNIST(download_if_missing=True,
                         data_folder='../downloaded_dataset/mnist/')
@@ -29,8 +21,12 @@ class mnist_tests(unittest.TestCase):
 
         for v, l in [('train', 60000), ('test', 10000), ('dev', 0)]:
             dataset.current_split = DatasetSplits(v)
-            i = [_ for _, _, _ in dataset]
-            self.assertTrue(len(i) == l)
+            print(len(dataset))
+            self.assertTrue(len(dataset) == l)
+
+        self.assertTrue(len(dataset.test_split()) == 10000)
+        self.assertTrue(len(dataset.train_split()) == 60000)
+        self.assertTrue(len(dataset.dev_split()) == 0)
 
     def test_subset(self):
         dataset = MNIST(download_if_missing=True,
