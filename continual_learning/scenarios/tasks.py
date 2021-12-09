@@ -24,10 +24,10 @@ class Task(AbstractTask):
         self.labels_mapping = labels_mapping
 
         self._task_classes = None
-        self._dataset_classes = base_dataset.classes
+        self._dataset_classes = sorted(base_dataset.classes)
 
         if self._dataset_classes is not None:
-            self._task_classes = self._map_labels(self._dataset_classes)
+            self._task_classes = sorted(self._map_labels(self._dataset_classes))
 
     def use_task_labels(self):
         self._task_labels = True
@@ -46,9 +46,9 @@ class Task(AbstractTask):
     @property
     def classes(self):
         if self._task_labels:
-            return self.task_labels()
+            return self.task_labels
         else:
-            return self.dataset_labels()
+            return self.dataset_labels
 
     def _map_labels(self, y):
         if self.labels_mapping is None:
@@ -104,8 +104,8 @@ class TransformerTask(Task):
                  *,
                  base_dataset: AbstractDataset,
                  transformer: Callable[[Any], Any],
-                 labels_mapping: Union[dict, Callable[[Any], Any]] = None,
                  task_index: int,
+                 labels_mapping: Union[dict, Callable[[Any], Any]] = None,
                  **kwargs):
 
         super().__init__(task_index=task_index,

@@ -22,9 +22,9 @@ class MNIST(DownloadableDataset):
 
     def __init__(self, download_if_missing: bool = True,
                  data_folder: str = None,
-                 transformer: Callable = None,
-                 test_transformer: Callable = None,
-                 target_transformer: Callable = None):
+                 transform: Callable = None,
+                 test_transform: Callable = None,
+                 target_transform: Callable = None):
 
         self._get_int = lambda x: int(codecs.encode(x, 'hex'), 16)
 
@@ -33,10 +33,10 @@ class MNIST(DownloadableDataset):
         super().__init__(name='MNIST',
                          download_if_missing=download_if_missing,
                          data_folder=data_folder,
-                         transformer=transformer,
-                         target_transformer=target_transformer,
-                         test_transformer=test_transformer)
-
+                         transform=transform,
+                         target_transform=target_transform,
+                         test_transform=test_transform)
+    
     def _load_image(self, data):
         length = self._get_int(data[4:8])
         num_rows = self._get_int(data[8:12])
@@ -101,13 +101,13 @@ class KMNIST(MNIST):
                     'labels': 'http://codh.rois.ac.jp/kmnist/dataset/kmnist/t10k-labels-idx1-ubyte.gz'}}
 
     def __init__(self, download_if_missing: bool = True, data_folder: str = None,
-                 transformer: Callable = None, test_transformer: Callable = None, target_transformer: Callable = None):
+                 transform: Callable = None, test_transform: Callable = None, target_transform: Callable = None):
         self._get_int = lambda x: int(codecs.encode(x, 'hex'), 16)
         self.file_names = [url.rpartition('/')[2] for url in self.url]
 
         super(MNIST, self).__init__(name='KMNIST', download_if_missing=download_if_missing, data_folder=data_folder,
-                                    transformer=transformer, target_transformer=target_transformer,
-                                    test_transformer=test_transformer)
+                                    transform=transform, target_transform=target_transform,
+                                    test_transform=test_transform)
 
 
 class K49MNIST(MNIST):
@@ -117,15 +117,15 @@ class K49MNIST(MNIST):
                     'labels': 'http://codh.rois.ac.jp/kmnist/dataset/k49/k49-test-labels.npz'}}
 
     def __init__(self, download_if_missing: bool = True, data_folder: str = None,
-                 transformer: Callable = None, test_transformer: Callable = None, target_transformer: Callable = None):
+                 transform: Callable = None, test_transform: Callable = None, target_transform: Callable = None):
 
         self._get_int = lambda x: int(codecs.encode(x, 'hex'), 16)
 
         self.file_names = [url.rpartition('/')[2] for url in self.url]
 
         super(MNIST, self).__init__(name='K49MNIST', download_if_missing=download_if_missing, data_folder=data_folder,
-                                    transformer=transformer, target_transformer=target_transformer,
-                                    test_transformer=test_transformer)
+                                    transform=transform, target_transform=target_transform,
+                                    test_transform=test_transform)
 
     def load_dataset(self) -> Tuple[Tuple[np.ndarray, np.ndarray], Tuple[list, list, list]]:
 

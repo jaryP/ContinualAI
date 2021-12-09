@@ -25,11 +25,6 @@ class DatasetProblem(Enum):
     CLASSIFICATION = 0
     REGRESSION = 1
 
-from .base import \
-    SupervisedDataset, \
-    UnsupervisedDataset, \
-    IndexesContainer
-
 from .dataset_definition import AbstractDataset, \
     DatasetSplitsContainer, \
     BaseDataset, \
@@ -42,5 +37,5 @@ from .dataset_definition import AbstractDataset, \
 #     SupervisedDownloadableDataset, \
 #     DatasetSplitContexView
 
-from .split_functions import create_dataset_with_dev_split, \
-    create_dataset_with_new_split
+from .split_functions import create_dataset_with_new_split, \
+    add_dev_split_to_container

@@ -84,8 +84,14 @@ class BaseDataset(AbstractDataset):
         self.target_transform = target_transform \
             if target_transform is not None else lambda z: z
 
+        self._use_transform = True
+
         self._targets = targets
         self._values = values
+
+    @property
+    def base_dataset_indexes(self):
+        return np.arange(len(self))
 
     @property
     def classes(self):
@@ -131,11 +137,14 @@ class BaseDataset(AbstractDataset):
             else:
                 x = self.values[i]
 
-            x = self.transform(x)
+            if self._use_transform:
+                x = self.transform(x)
 
             if self.dataset_type == DatasetType.SUPERVISED:
                 y = self.targets[i]
-                x = self.target_transform(y)
+
+                if self._use_transform:
+                    y = self.target_transform(y)
 
                 t = (i, x, y)
             else:
@@ -144,6 +153,9 @@ class BaseDataset(AbstractDataset):
             rets.append(t)
 
         return rets if to_map else rets[0]
+
+    def use_transform(self, v: bool):
+        self._use_transform = v
 
     def get_subset(self,
                    subset: IndexesType,
@@ -174,12 +186,6 @@ class DatasetSubset(BaseDataset):
                  path_loading_function: Callable = None,
                  **kwargs):
 
-        super().__init__(values=values, transform=transform,
-                         target_transform=target_transform, targets=targets,
-                         is_path_dataset=is_path_dataset,
-                         images_path=images_path,
-                         path_loading_function=path_loading_function, **kwargs)
-
         if len(subset) >= len(values):
             raise ValueError(f'The len of values ({len(values)}) '
                              f'is higher than length of'
@@ -193,7 +199,23 @@ class DatasetSubset(BaseDataset):
                                  f'the minimum value is '
                                  f'lower that 0 ({min(subset)})')
 
-        self._subset = subset
+        self._subset = np.asarray(subset)
+
+        super().__init__(values=values, transform=transform,
+                         target_transform=target_transform, targets=targets,
+                         is_path_dataset=is_path_dataset,
+                         images_path=images_path,
+                         path_loading_function=path_loading_function, **kwargs)
+
+    @property
+    def base_dataset_indexes(self):
+        return self._subset
+
+    @property
+    def classes(self):
+        if self.targets is None:
+            return None
+        return sorted(list(set(self.targets)))
 
     @property
     def values(self):
@@ -245,6 +267,8 @@ class DatasetSplitsContainer(AbstractDataset):
                  path_loading_function: Callable = None,
                  **kwargs):
 
+        super().__init__()
+
         def _duplicate_check(l: Sequence):
             return len(set(l)) != len(l)
 
@@ -275,50 +299,56 @@ class DatasetSplitsContainer(AbstractDataset):
         if test is None:
             test = []
 
-        if not isinstance(train, AbstractDataset):
+        if not isinstance(train, (BaseDataset, DatasetSubset)):
             if _duplicate_check(train):
                 raise ValueError('Train indexes list contains duplicates.')
 
-            train = DatasetSubset(values=values,
-                                  subset=train,
+            d_train = DatasetSubset(values=values,
+                                    subset=train,
+                                    transform=transform,
+                                    target_transform=target_transform,
+                                    targets=targets,
+                                    is_path_dataset=is_path_dataset,
+                                    images_path=images_path,
+                                    path_loading_function=path_loading_function)
+        else:
+            d_train = train
+
+        if not isinstance(test, (BaseDataset, DatasetSubset)):
+            if _duplicate_check(test):
+                raise ValueError('Test indexes list contains duplicates.')
+
+            d_test = DatasetSubset(values=values,
+                                   subset=test,
+                                   transform=transform,
+                                   target_transform=target_transform,
+                                   targets=targets,
+                                   is_path_dataset=is_path_dataset,
+                                   images_path=images_path,
+                                   path_loading_function=path_loading_function)
+        else:
+            d_test = test
+
+        if not isinstance(dev, (BaseDataset, DatasetSubset)):
+            if _duplicate_check(dev):
+                raise ValueError('Dev indexes list contains duplicates.')
+
+            d_dev = DatasetSubset(values=values,
+                                  subset=dev,
                                   transform=transform,
                                   target_transform=target_transform,
                                   targets=targets,
                                   is_path_dataset=is_path_dataset,
                                   images_path=images_path,
                                   path_loading_function=path_loading_function)
-
-        if not isinstance(test, AbstractDataset):
-            if _duplicate_check(test):
-                raise ValueError('Test indexes list contains duplicates.')
-
-            test = DatasetSubset(values=values,
-                                 subset=test,
-                                 transform=transform,
-                                 target_transform=target_transform,
-                                 targets=targets,
-                                 is_path_dataset=is_path_dataset,
-                                 images_path=images_path,
-                                 path_loading_function=path_loading_function)
-
-        if not isinstance(dev, AbstractDataset):
-            if _duplicate_check(dev):
-                raise ValueError('Dev indexes list contains duplicates.')
-
-            dev = DatasetSubset(values=values,
-                                subset=dev,
-                                transform=transform,
-                                target_transform=target_transform,
-                                targets=targets,
-                                is_path_dataset=is_path_dataset,
-                                images_path=images_path,
-                                path_loading_function=path_loading_function)
+        else:
+            d_dev = dev
 
         self._splits = \
             {
-                DatasetSplits.TRAIN: train,
-                DatasetSplits.TEST: test,
-                DatasetSplits.DEV: dev,
+                DatasetSplits.TRAIN: d_train,
+                DatasetSplits.TEST: d_test,
+                DatasetSplits.DEV: d_dev,
             }
 
         self._current_split = DatasetSplits.TRAIN
@@ -327,7 +357,7 @@ class DatasetSplitsContainer(AbstractDataset):
         return len(self._splits[self._current_split])
 
     @property
-    def current_split(self) -> DatasetSplits:
+    def current_split(self) -> BaseDataset:
         return self._current_split
 
     @current_split.setter
@@ -361,11 +391,18 @@ class DatasetSplitsContainer(AbstractDataset):
     def targets(self):
         return self.current_dataset.targets
 
+    @property
+    def base_dataset_indexes(self):
+        return self.current_split.base_dataset_indexes
+
+    def get_dataset_indexes(self, v: DatasetSplits):
+        return self.get_split(v).base_dataset_indexes
+
     def train(self) -> None:
         self._current_split = DatasetSplits.TRAIN
 
     def train_split(self) -> D:
-        return self.get_dataset(DatasetSplits.TRAIN)
+        return self.get_split(DatasetSplits.TRAIN)
 
     def test(self) -> None:
         self._current_split = DatasetSplits.TEST
@@ -374,7 +411,7 @@ class DatasetSplitsContainer(AbstractDataset):
                           RuntimeWarning)
 
     def test_split(self) -> D:
-        return self.get_dataset(DatasetSplits.TEST)
+        return self.get_split(DatasetSplits.TEST)
 
     def dev(self) -> None:
         self._current_split = DatasetSplits.DEV
@@ -383,7 +420,7 @@ class DatasetSplitsContainer(AbstractDataset):
                           RuntimeWarning)
 
     def dev_split(self) -> D:
-        return self.get_dataset(DatasetSplits.DEV)
+        return self.get_split(DatasetSplits.DEV)
 
     def get_subset(self,
                    train_subset: IndexesType,
@@ -407,9 +444,16 @@ class DatasetSplitsContainer(AbstractDataset):
             raise ValueError('One of train_subset, test_subset and dev_subset '
                              'must be not None (or non empty sequence).')
 
-        train = self.train_split().get_subset(train_subset)
-        test = self.test_split().get_subset(test_subset)
-        dev = self.dev_split().get_subset(dev_subset)
+        train = self.train_split()
+        train = train.get_subset(train_subset)
+
+        test = self.test_split()
+        if len(test) > 0:
+            test = test.get_subset(test_subset)
+
+        dev = self.dev_split()
+        if len(dev) > 0:
+            dev = dev.get_subset(dev_subset)
 
         if as_splitted_dataset:
             return DatasetSplitsContainer(train=train,
@@ -418,15 +462,19 @@ class DatasetSplitsContainer(AbstractDataset):
         else:
             return train, test, dev
 
-    def get_dataset(self, split: Union[DatasetSplits, str],
-                    **kwargs) -> BaseDataset:
+    def use_transform(self, v: bool):
+        self.current_split.use_transform(v)
+
+    def get_split(self, split: Union[DatasetSplits, str],
+                  **kwargs) -> BaseDataset:
         if isinstance(split, str):
-            split = DatasetType(split)
+            split = DatasetSplits(split)
 
         return self._splits[split]
 
     def __getitem__(self, item: Union[tuple, slice, int, list, np.ndarray]):
-        return self.get_dataset(self.current_split)[item]
+        a = self.current_dataset
+        return a[item]
 
     def __iter__(self):
         for i in range(len(self)):
@@ -439,9 +487,9 @@ class DownloadableDataset(DatasetSplitsContainer, ABC):
                  *,
                  name: str,
 
-                 transformer: Callable = None,
-                 test_transformer: Callable = None,
-                 target_transformer: Callable = None,
+                 transform: Callable = None,
+                 test_transform: Callable = None,
+                 target_transform: Callable = None,
 
                  download_if_missing: bool = True,
                  data_folder: str = None,
@@ -457,9 +505,6 @@ class DownloadableDataset(DatasetSplitsContainer, ABC):
 
         self.data_folder = data_folder
         self._name = name
-
-        self.transformer = transformer \
-            if transformer is not None else lambda x: x
 
         missing = not self._check_exists()
 
@@ -487,11 +532,11 @@ class DownloadableDataset(DatasetSplitsContainer, ABC):
                          train=train,
                          test=test,
                          dev=dev,
-                         transformer=transformer,
-                         target_transformer=
-                         target_transformer,
-                         test_transformer=
-                         test_transformer,
+                         transform=transform,
+                         target_transform=
+                         target_transform,
+                         test_transform=
+                         test_transform,
                          is_path_dataset=is_path_dataset,
                          images_path=images_path,
                          path_loading_function=path_loading_function,

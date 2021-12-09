@@ -19,16 +19,16 @@ class TinyImagenet(DownloadableDataset):
     def __init__(self,
                  download_if_missing: bool = True,
                  data_folder: str = None,
-                 transformer: Callable = None,
-                 test_transformer: Callable = None,
-                 target_transformer: Callable = None):
+                 transform: Callable = None,
+                 test_transform: Callable = None,
+                 target_transform: Callable = None):
 
         super().__init__(name='TINY_IMAGENET',
                          download_if_missing=download_if_missing,
                          data_folder=data_folder,
-                         transformer=transformer,
-                         target_transformer=target_transformer,
-                         test_transformer=test_transformer,
+                         transform=transform,
+                         target_transform=target_transform,
+                         test_transform=test_transform,
                          is_path_dataset=True,
                          images_path="tiny-imagenet-200")
 

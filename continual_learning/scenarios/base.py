@@ -8,10 +8,13 @@ from typing import Union, Tuple
 
 import numpy as np
 
-from continual_learning.datasets.base import SupervisedDataset, \
-    UnsupervisedDataset, DatasetSplits, AbstractDataset, DatasetSplitsContainer, \
-    BaseDataset
-from continual_learning.datasets.base.base import IndexesType
+# from continual_learning.datasets.base import SupervisedDataset, \
+#     UnsupervisedDataset, DatasetSplits, AbstractDataset, DatasetSplitsContainer, \
+#     BaseDataset
+from continual_learning.datasets.base import DatasetSplitsContainer, \
+    AbstractDataset, BaseDataset, DatasetSplits
+
+IndexesType = Union[list, np.ndarray]
 
 
 class conditional_decorator(object):
@@ -107,7 +110,7 @@ class AbstractTask(ABC):
         return self.base_dataset.targets
 
     @conditional_split_property
-    def current_split(self) -> DatasetSplits:
+    def current_split(self) -> BaseDataset:
         return self.base_dataset.current_split
 
     @current_split.setter
@@ -116,11 +119,11 @@ class AbstractTask(ABC):
             v = DatasetSplits(v)
 
         if v == DatasetSplits.TRAIN:
-            self.train()
+            self.base_dataset.train()
         elif v == DatasetSplits.TEST:
-            self.test()
+            self.base_dataset.test()
         elif v == DatasetSplits.DEV:
-            self.dev()
+            self.base_dataset.dev()
 
     @property
     def current_dataset(self):
@@ -172,7 +175,7 @@ class AbstractTask(ABC):
     def get_dataset(self, split: Union[DatasetSplits, str],
                     **kwargs) -> BaseDataset:
 
-        return self.base_dataset.get_dataset(split)
+        return self.base_dataset.get_split(split)
 
 
 class TaskSplitContainer(AbstractTask):
@@ -188,7 +191,7 @@ class TaskSplitContainer(AbstractTask):
         self.task_index = task_index
 
     @property
-    def current_split(self) -> DatasetSplits:
+    def current_split(self) -> BaseDataset:
         return self.base_dataset.current_split
 
     @current_split.setter
@@ -260,12 +263,12 @@ class TaskSplitContainer(AbstractTask):
     def get_dataset(self, split: Union[DatasetSplits, str],
                     **kwargs) -> BaseDataset:
 
-        return self.base_dataset.get_dataset(split)
+        return self.base_dataset.get_split(split)
 
 
 class TasksGenerator(ABC):
     def __init__(self,
-                 dataset: Union[SupervisedDataset, UnsupervisedDataset],
+                 dataset: DatasetSplitsContainer,
                  random_state: Union[np.random.RandomState, int] = None,
                  **kwargs):
 
@@ -281,8 +284,7 @@ class TasksGenerator(ABC):
         self.random_state = random_state
 
     @abstractmethod
-    def generate_task(self, dataset: Union[UnsupervisedDataset,
-                                           SupervisedDataset],
+    def generate_task(self, dataset: AbstractDataset,
                       random_state: Union[np.random.RandomState, int] = None,
                       **kwargs) \
             -> Union[AbstractTask, None]:

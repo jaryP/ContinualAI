@@ -28,6 +28,9 @@ class mnist_tests(unittest.TestCase):
         self.assertTrue(len(dataset.train_split()) == 60000)
         self.assertTrue(len(dataset.dev_split()) == 0)
 
+        dataset.train()
+        print(dataset[0][1].shape)
+
     def test_subset(self):
         dataset = MNIST(download_if_missing=True,
                         data_folder='../downloaded_dataset/mnist/')
@@ -94,13 +97,13 @@ class mnist_tests(unittest.TestCase):
     def test_transform(self):
         dataset = MNIST(download_if_missing=True,
                         data_folder='../downloaded_dataset/mnist/',
-                        transformer=lambda x: x + 1,
-                        test_transformer=lambda x: x + 1)
+                        transform=lambda x: x + 1,
+                        test_transform=lambda x: x + 1)
         a = dataset[0][1]
 
         dataset = MNIST(download_if_missing=True,
                         data_folder='../downloaded_dataset/mnist/',
-                        transformer=None)
+                        transform=None)
         b = dataset[0][1]
 
         self.assertTrue((a != b).all())
@@ -108,8 +111,8 @@ class mnist_tests(unittest.TestCase):
     def test_dev_split(self):
         dataset = MNIST(download_if_missing=True,
                         data_folder='../downloaded_dataset/mnist/',
-                        transformer=lambda x: x + 1,
-                        test_transformer=lambda x: x + 1)
+                        transform=lambda x: x + 1,
+                        test_transform=lambda x: x + 1)
 
         new_dataset = create_dataset_with_dev_split(dataset=dataset)
 
@@ -129,8 +132,8 @@ class mnist_tests(unittest.TestCase):
     def test_new_splits(self):
         dataset = MNIST(download_if_missing=True,
                         data_folder='../downloaded_dataset/mnist/',
-                        transformer=lambda x: x + 1,
-                        test_transformer=lambda x: x + 1)
+                        transform=lambda x: x + 1,
+                        test_transform=lambda x: x + 1)
 
         new_dataset = create_dataset_with_new_split(dataset=dataset)
 

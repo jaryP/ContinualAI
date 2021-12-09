@@ -3,8 +3,7 @@ from typing import Union, List, Any, Callable, Dict
 
 import numpy as np
 
-from continual_learning.datasets.base import UnsupervisedDataset, \
-    SupervisedDataset
+from continual_learning.datasets.base import AbstractDataset, DatasetSplitsContainer
 
 from continual_learning.scenarios.base import TasksGenerator
 from continual_learning.scenarios.classification.new_classes import \
@@ -19,7 +18,7 @@ class NCScenario(TasksGenerator):
     def __init__(self,
                  *,
                  tasks_n: int,
-                 dataset: SupervisedDataset,
+                 dataset: DatasetSplitsContainer,
                  # transform_factory: Callable[[Any], Callable],
                  # transformation_parameters: Union[List[any],
                  #                                  Callable[[Any], Any]],
@@ -36,7 +35,7 @@ class NCScenario(TasksGenerator):
                          random_state=random_state,
                          **kwargs)
 
-        dataset_labels = np.asarray(dataset.labels)
+        dataset_labels = np.asarray(dataset.classes)
         assigned_labels = []
 
         if labels_task_mapping is None:
@@ -248,7 +247,7 @@ class NCScenario(TasksGenerator):
 
 class ImageRotationScenario(NCTransformingScenario):
     def __init__(self,
-                 dataset: Union[SupervisedDataset, UnsupervisedDataset],
+                 dataset: DatasetSplitsContainer,
                  tasks_n: int,
                  transformation_parameters: Union[List[any],
                                                   Callable[[Any], Any]],
@@ -279,7 +278,7 @@ class ImageRotationScenario(NCTransformingScenario):
 
 class PixelsPermutationScenario(NCTransformingScenario):
     def __init__(self,
-                 dataset: Union[SupervisedDataset, UnsupervisedDataset],
+                 dataset: DatasetSplitsContainer,
                  tasks_n: int,
                  transformation_parameters: Union[List[any],
                                                   Callable[[Any], Any]],
