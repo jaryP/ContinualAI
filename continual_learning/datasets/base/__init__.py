@@ -1,19 +1,23 @@
 from enum import unique, Enum
-from aenum import MultiValueEnum
 
+from PIL import Image
+
+
+def path_image_loading(path):
+    return Image.open(path).convert('RGB')
 
 @unique
-class DatasetSplits(MultiValueEnum):
-    TRAIN = 0, 'train'
-    TEST = 1, 'test'
-    DEV = 2, 'dev'
-    ALL = 3, 'all'
+class DatasetSplits(Enum):
+    TRAIN = 'train'
+    TEST = 'test'
+    DEV = 'dev'
+    ALL = 'all'
 
 
 @unique
 class DatasetType(Enum):
-    SUPERVISED = 0
-    UNSUPERVISED = 1
+    SUPERVISED = 'supervised'
+    UNSUPERVISED = 'unsupervised'
 
 
 @unique
@@ -21,17 +25,17 @@ class DatasetProblem(Enum):
     CLASSIFICATION = 0
     REGRESSION = 1
 
+from .dataset_definition import AbstractDataset, \
+    DatasetSplitsContainer, \
+    BaseDataset, \
+    DatasetSubset, \
+    DownloadableDataset
 
-from .base import \
-    SupervisedDataset, \
-    UnsupervisedDataset, \
-    IndexesContainer
+# from .utils import  DownloadableDataset\
+#     , \
+#     UnsupervisedDownloadableDataset, \
+#     SupervisedDownloadableDataset, \
+#     DatasetSplitContexView
 
-from .utils import \
-    DownloadableDataset, \
-    UnsupervisedDownloadableDataset, \
-    SupervisedDownloadableDataset, \
-    DatasetSplitContexView
-
-from .split_functions import create_dataset_with_dev_split, \
-    create_dataset_with_new_split
+from .split_functions import create_dataset_with_new_split, \
+    add_dev_split_to_container

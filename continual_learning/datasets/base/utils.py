@@ -9,12 +9,14 @@ import numpy as np
 from torch.utils.data import DataLoader
 
 from continual_learning.datasets.base import UnsupervisedDataset, \
-    SupervisedDataset, DatasetSplits, IndexesContainer
-from continual_learning.datasets.base.base import AbstractDataset, IndexesType
+    SupervisedDataset, DatasetSplitsContainer, DatasetSplits
 
 
-class DatasetSplitContexView(object):
-    def __init__(self, dataset: Union[UnsupervisedDataset, SupervisedDataset],
+# from continual_learning.datasets.base.base import DatasetSplits
+
+
+class DatasetSplitContexView:
+    def __init__(self, dataset: DatasetSplitsContainer,
                  split: DatasetSplits):
         self._dataset = dataset
         self._current_split = dataset.current_split

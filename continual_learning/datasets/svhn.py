@@ -4,24 +4,24 @@ from urllib.request import urlretrieve
 import numpy as np
 from scipy import io
 
-from continual_learning.datasets.base import SupervisedDownloadableDataset
+from continual_learning.datasets.base import DownloadableDataset
 
 __all__ = ['SVHN']
 
-class SVHN(SupervisedDownloadableDataset):
+class SVHN(DownloadableDataset):
 
     url = {'train': {'images': "http://ufldl.stanford.edu/housenumbers/train_32x32.mat"},
            'test': {'images': "http://ufldl.stanford.edu/housenumbers/test_32x32.mat"}}
 
     def __init__(self, download_if_missing: bool = True, data_folder: str = None,
-                 transformer: Callable = None, test_transformer: Callable = None, target_transformer: Callable = None):
+                 transform: Callable = None, test_transform: Callable = None, target_transform: Callable = None):
 
         self.file_names = [url.rpartition('/')[2] for url in self.url]
 
         super().__init__(name='SVHN', download_if_missing=download_if_missing, data_folder=data_folder,
-                         transformer=transformer,
-                         target_transformer=target_transformer,
-                         test_transformer=test_transformer)
+                         transform=transform,
+                         target_transform=target_transform,
+                         test_transform=test_transform)
 
     def download_dataset(self):
         for _, type in self.url.items():

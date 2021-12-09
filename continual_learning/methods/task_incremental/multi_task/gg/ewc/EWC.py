@@ -7,7 +7,7 @@ import torch
 
 from continual_learning.methods.task_incremental.multi_task.gg \
     import BaseMultiTaskGGMethod
-from continual_learning.scenarios.tasks import SupervisedTask
+from continual_learning.scenarios.tasks import Task
 
 
 class ElasticWeightConsolidation(BaseMultiTaskGGMethod):
@@ -40,7 +40,7 @@ class ElasticWeightConsolidation(BaseMultiTaskGGMethod):
         self.memory = list()
         self.loss = torch.nn.CrossEntropyLoss(reduction='mean')
 
-    def on_task_ends(self, task: SupervisedTask, encoder: torch.nn.Module, solver, *args, **kwargs):
+    def on_task_ends(self, task: Task, encoder: torch.nn.Module, solver, *args, **kwargs):
 
         final_w = {n: deepcopy(p.data) for n, p in itertools.chain(encoder.named_parameters())
                    if p.requires_grad and p.grad is not None}

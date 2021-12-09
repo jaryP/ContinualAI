@@ -4,7 +4,7 @@ from continual_learning.methods.task_incremental.multi_task.gg\
     import BaseMultiTaskGGMethod
 from continual_learning.methods.task_incremental.multi_task.gg.\
     supermask_superposition.base import SupSupMaskWrapper
-from continual_learning.scenarios.tasks import SupervisedTask
+from continual_learning.scenarios.tasks import Task
 
 
 class SupermaskSuperposition(BaseMultiTaskGGMethod):
@@ -34,13 +34,13 @@ class SupermaskSuperposition(BaseMultiTaskGGMethod):
                                                        self.pruning_percentage))
             self.apply_wrapper_to_model(module)
 
-    def set_task(self, backbone: nn.Module, task: SupervisedTask, **kwargs):
+    def set_task(self, backbone: nn.Module, task: Task, **kwargs):
         task_i = task.index
         for n, m in backbone.named_modules():
             if isinstance(m, SupSupMaskWrapper):
                 m.set_current_task(task_i)
 
-    def on_task_starts(self, backbone: nn.Module, task: SupervisedTask, *args, **kwargs):
+    def on_task_starts(self, backbone: nn.Module, task: Task, *args, **kwargs):
         task_i = task.index
         for n, m in backbone.named_modules():
             if isinstance(m, SupSupMaskWrapper):

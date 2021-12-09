@@ -2,12 +2,11 @@ from typing import Union, Callable, Any, List, Dict
 
 import numpy as np
 
-from continual_learning.datasets.base import SupervisedDataset, \
-    UnsupervisedDataset
-from continual_learning.scenarios.base import TasksGenerator, Task
+from continual_learning.datasets.base import AbstractDataset
+from continual_learning.scenarios.base import TasksGenerator, AbstractTask
 from continual_learning.scenarios.classification.utils import \
     get_dataset_subset_using_labels
-from continual_learning.scenarios.tasks import SupervisedTransformerTask
+from continual_learning.scenarios.tasks import TransformerTask
 
 
 class NCTransformingScenario(TasksGenerator):
@@ -16,7 +15,7 @@ class NCTransformingScenario(TasksGenerator):
     def __init__(self,
                  *,
                  tasks_n: int,
-                 dataset: Union[SupervisedDataset, UnsupervisedDataset],
+                 dataset: AbstractDataset,
 
                  transform_factory: Callable[[Any], Callable],
                  transformation_parameters: Union[List[any],
@@ -38,7 +37,7 @@ class NCTransformingScenario(TasksGenerator):
                          random_state=random_state,
                          **kwargs)
 
-        self.dataset_labels, dataset_labels = np.asarray(dataset.labels)
+        self.dataset_labels, dataset_labels = np.asarray(dataset.classes)
 
         if tasks_n < 0:
             raise ValueError(f'Argument tasks_n must be '
@@ -64,37 +63,6 @@ class NCTransformingScenario(TasksGenerator):
         else:
             labels_task_mapping = {l: list(range(tasks_n))
                                    for l in dataset_labels}
-
-        # if labels_per_tasks is None:
-        #     labels_per_tasks = {task: len(dataset_labels)
-        #                         for task in range(tasks_n)}
-
-        # if remap_labels_in_task and remap_labels_across_task:
-        #     raise ValueError('Both remap_labels_in_task and '
-        #                      'remap_labels_across_task are set to True '
-        #                      'but are mutually exclusive. '
-        #                      'Please set at least one to False.')
-        #
-        # if not remap_labels_in_task and not remap_labels_across_task:
-        #     raise ValueError('Both remap_labels_in_task and '
-        #                      'remap_labels_across_task are set to False. '
-        #                      'Please specify how to set.')
-
-        # if max(labels_per_tasks.keys()) >= tasks_n or min(
-        #         labels_per_tasks.keys()) < 0:
-        #     raise ValueError('Invalid key value in labels_per_tasks. '
-        #                      f'The keys must be in  [0, {tasks_n - 1}] '
-        #                      f'({labels_per_tasks.keys()})')
-        #
-        # if min(labels_per_tasks.values()) < 0:
-        #     raise ValueError('Invalid value in labels_per_tasks. '
-        #                      f'The values must be > 0'
-        #                      f'({labels_per_tasks.keys()})')
-        #
-        # if max(labels_per_tasks.values()) > 0:
-        #     raise ValueError('Invalid value in labels_per_tasks. '
-        #                      f'The values must be <= {len(dataset_labels)}'
-        #                      f'({labels_per_tasks.keys()})')
 
         if not all(label in dataset_labels
                    for label, task in labels_task_mapping.items()):
@@ -181,7 +149,7 @@ class NCTransformingScenario(TasksGenerator):
         # else:
         return self.task_n
 
-    def __getitem__(self, i: int) -> Task:
+    def __getitem__(self, i: int) -> AbstractTask:
         if i > len(self._tasks_generated):
             # if self.infinite_stream:
             #     raise ValueError(f'Attempting to get a non generated task from '
@@ -198,7 +166,7 @@ class NCTransformingScenario(TasksGenerator):
 
         return self._tasks_generated[i]
 
-    def generate_task(self, **kwargs) -> Union[Task, None]:
+    def generate_task(self, **kwargs) -> Union[AbstractTask, None]:
 
         counter = len(self._tasks_generated)
 
@@ -213,7 +181,7 @@ class NCTransformingScenario(TasksGenerator):
         labels_map = self.labels_mapping[counter]
         labels = self.task_labels[counter]
 
-        if len(labels) == len(self.dataset.labels):
+        if len(labels) == len(self.dataset.classes):
             dataset = self.dataset
         else:
             dataset = get_dataset_subset_using_labels(self.dataset,
@@ -221,10 +189,10 @@ class NCTransformingScenario(TasksGenerator):
 
         t = self.transform_function(t_parameters)
 
-        task = SupervisedTransformerTask(base_dataset=dataset,
-                                         transformer=t,
-                                         task_index=counter,
-                                         labels_mapping=labels_map)
+        task = TransformerTask(base_dataset=dataset,
+                               transformer=t,
+                               task_index=counter,
+                               labels_mapping=labels_map)
 
         self._tasks_generated.append(task)
 
@@ -233,7 +201,7 @@ class NCTransformingScenario(TasksGenerator):
     def __next__(self):
         self._current_task = 0
         return self
-    
+
     def __iter__(self):
         while True:
             # if not self.infinite_stream:

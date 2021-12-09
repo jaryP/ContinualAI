@@ -2,17 +2,16 @@ from typing import Union, List, Any, Callable
 
 import numpy as np
 
-from continual_learning.datasets.base import UnsupervisedDataset, \
-    SupervisedDataset
-from continual_learning.scenarios.classification.new_instances import \
-    NITransformingScenario
+from continual_learning.datasets.base import AbstractDataset
+from . import NITransformingScenario
+
 from continual_learning.scenarios.utils import \
     ImageRotation, PixelsPermutation
 
 
 class ImageRotationScenario(NITransformingScenario):
     def __init__(self,
-                 dataset: Union[SupervisedDataset, UnsupervisedDataset],
+                 dataset: AbstractDataset,
                  tasks_n: int,
                  transformation_parameters: Union[List[any],
                                                   Callable[[Any], Any]],
@@ -38,7 +37,7 @@ class ImageRotationScenario(NITransformingScenario):
 
 class PixelsPermutationScenario(NITransformingScenario):
     def __init__(self,
-                 dataset: Union[SupervisedDataset, UnsupervisedDataset],
+                 dataset: AbstractDataset,
                  tasks_n: int,
                  transformation_parameters: Union[List[any],
                                                   Callable[[Any], Any]],

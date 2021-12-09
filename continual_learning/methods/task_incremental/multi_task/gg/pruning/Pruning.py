@@ -8,7 +8,7 @@ from continual_learning.methods.task_incremental.multi_task.gg\
     import BaseMultiTaskGGMethod
 from continual_learning.methods.task_incremental.multi_task.gg.pruning.utils \
     import PrunedLayer, get_accuracy
-from continual_learning.scenarios.tasks import SupervisedTask
+from continual_learning.scenarios.tasks import Task
 from continual_learning.solvers.base import Solver
 
 
@@ -42,7 +42,7 @@ class Pruning(BaseMultiTaskGGMethod):
                 setattr(model, name, PrunedLayer(l))
             self.apply_wrapper_to_model(module)
 
-    def set_task(self, backbone, solver, task: SupervisedTask,  **kwargs):
+    def set_task(self, backbone, solver, task: Task, **kwargs):
         if task.index in self.tasks_masks:
             for name, module in backbone.named_modules():
                 if isinstance(module, PrunedLayer):
@@ -69,14 +69,14 @@ class Pruning(BaseMultiTaskGGMethod):
 
         loss += l1
 
-    def after_gradient_calculation(self, backbone: nn.Module, task: SupervisedTask, solver: Solver, **kwargs):
+    def after_gradient_calculation(self, backbone: nn.Module, task: Task, solver: Solver, **kwargs):
         if task.index > 0:
             past_masks = self._get_past_masks(backbone, task.index)
             for name, module in backbone.named_modules():
                 if isinstance(module, PrunedLayer):
                     module.weight.grad *= torch.logical_not(past_masks[name])
 
-    def on_task_ends(self, backbone: nn.Module, task: SupervisedTask, solver: Solver, *args, **kwargs):
+    def on_task_ends(self, backbone: nn.Module, task: Task, solver: Solver, *args, **kwargs):
         task.dev()
         if len(task) == 0:
             task.train()

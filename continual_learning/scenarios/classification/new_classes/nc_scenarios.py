@@ -3,15 +3,14 @@ from typing import Union, List, Any, Callable, Dict
 
 import numpy as np
 
-from continual_learning.datasets.base import UnsupervisedDataset, \
-    SupervisedDataset
+from continual_learning.datasets.base import AbstractDataset, DatasetSplitsContainer
 
 from continual_learning.scenarios.base import TasksGenerator
 from continual_learning.scenarios.classification.new_classes import \
     NCTransformingScenario
 from continual_learning.scenarios.classification.utils import \
     get_dataset_subset_using_labels
-from continual_learning.scenarios.tasks import TransformerTask, SupervisedTask
+from continual_learning.scenarios.tasks import TransformerTask, Task
 from continual_learning.scenarios.utils import ImageRotation, PixelsPermutation
 
 
@@ -19,7 +18,7 @@ class NCScenario(TasksGenerator):
     def __init__(self,
                  *,
                  tasks_n: int,
-                 dataset: SupervisedDataset,
+                 dataset: DatasetSplitsContainer,
                  # transform_factory: Callable[[Any], Callable],
                  # transformation_parameters: Union[List[any],
                  #                                  Callable[[Any], Any]],
@@ -36,7 +35,7 @@ class NCScenario(TasksGenerator):
                          random_state=random_state,
                          **kwargs)
 
-        dataset_labels = np.asarray(dataset.labels)
+        dataset_labels = np.asarray(dataset.classes)
         assigned_labels = []
 
         if labels_task_mapping is None:
@@ -109,18 +108,19 @@ class NCScenario(TasksGenerator):
                              f'Dataset labels: {dataset_labels}, '
                              f'given labels: {labels_task_mapping}')
 
-        if max(labels_task_mapping.keys()) > len(dataset_labels) - 1 \
-                or min(labels_task_mapping.keys()) < 0:
-            raise ValueError('Invalid key value in labels_task_mapping. '
-                             f'The keys must be in  '
-                             f'[0, {len(dataset_labels) - 1}] '
-                             f'({labels_task_mapping.keys()})')
+        if len(labels_task_mapping) > 0:
+            if max(labels_task_mapping.keys()) > len(dataset_labels) - 1 \
+                    or min(labels_task_mapping.keys()) < 0:
+                raise ValueError('Invalid key value in labels_task_mapping. '
+                                 f'The keys must be in  '
+                                 f'[0, {len(dataset_labels) - 1}] '
+                                 f'({labels_task_mapping.keys()})')
 
-        if max(labels_task_mapping.values()) >= tasks_n \
-                or min(labels_per_tasks.values()) < 0:
-            raise ValueError('Invalid value in labels_task_mapping. '
-                             f'The values must be in  [0, {tasks_n - 1}] '
-                             f'({labels_task_mapping.values()})')
+            if max(labels_task_mapping.values()) >= tasks_n \
+                    or min(labels_per_tasks.values()) < 0:
+                raise ValueError('Invalid value in labels_task_mapping. '
+                                 f'The values must be in  [0, {tasks_n - 1}] '
+                                 f'({labels_task_mapping.values()})')
 
         task_labels = {k: [] for k in range(tasks_n)}
 
@@ -190,7 +190,7 @@ class NCScenario(TasksGenerator):
         return self.tasks_n
 
     def __getitem__(self, i: int):
-        if i > len(self._tasks_generated):
+        if i >= len(self._tasks_generated):
             raise ValueError(f'Attempting to get a non generated task from '
                              f'the lazy created stream of tasks (index: {i})'
                              f'. Generate the task or set '
@@ -199,7 +199,7 @@ class NCScenario(TasksGenerator):
 
         return self._tasks_generated[i]
 
-    def generate_task(self, **kwargs) -> Union[SupervisedTask, None]:
+    def generate_task(self, **kwargs) -> Union[Task, None]:
 
         counter = len(self._tasks_generated)
 
@@ -218,9 +218,9 @@ class NCScenario(TasksGenerator):
         labels_map = self.labels_mapping[counter]
 
         dataset = get_dataset_subset_using_labels(self.dataset, labels=labels)
-        task = SupervisedTask(base_dataset=dataset,
-                              labels_mapping=labels_map,
-                              task_index=counter)
+        task = Task(base_dataset=dataset,
+                    labels_mapping=labels_map,
+                    task_index=counter)
 
         # task = TransformerTask(base_dataset=self.dataset, transformer=t,
         #                        index=counter)
@@ -247,7 +247,7 @@ class NCScenario(TasksGenerator):
 
 class ImageRotationScenario(NCTransformingScenario):
     def __init__(self,
-                 dataset: Union[SupervisedDataset, UnsupervisedDataset],
+                 dataset: DatasetSplitsContainer,
                  tasks_n: int,
                  transformation_parameters: Union[List[any],
                                                   Callable[[Any], Any]],
@@ -278,7 +278,7 @@ class ImageRotationScenario(NCTransformingScenario):
 
 class PixelsPermutationScenario(NCTransformingScenario):
     def __init__(self,
-                 dataset: Union[SupervisedDataset, UnsupervisedDataset],
+                 dataset: DatasetSplitsContainer,
                  tasks_n: int,
                  transformation_parameters: Union[List[any],
                                                   Callable[[Any], Any]],

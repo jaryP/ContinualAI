@@ -8,7 +8,7 @@ from zipfile import ZipFile
 
 import numpy as np
 
-from continual_learning.datasets.base import SupervisedDownloadableDataset
+from continual_learning.datasets.base import DownloadableDataset
 
 __all__ = ['Core50_128']
 
@@ -22,7 +22,7 @@ scen2dirs = {
 }
 
 
-class Core50_128(SupervisedDownloadableDataset):
+class Core50_128(DownloadableDataset):
     url = ['http://bias.csr.unibo.it/maltoni/download/core50/core50_128x128.zip',
            'https://vlomonaco.github.io/core50/data/paths.pkl',
            'https://vlomonaco.github.io/core50/data/LUP.pkl',
@@ -42,15 +42,15 @@ class Core50_128(SupervisedDownloadableDataset):
     }
 
     def __init__(self, download_if_missing: bool = True, data_folder: str = None,
-                 transformer: Callable = None, test_transformer: Callable = None, target_transformer: Callable = None,
+                 transform: Callable = None, test_transform: Callable = None, target_transform: Callable = None,
                  scenario='ni'):
 
         self.scenario = scenario
         self.n_batches = self.nbatch[scenario]
 
         super().__init__(name='CORE50_128', download_if_missing=download_if_missing, data_folder=data_folder,
-                         transformer=transformer, target_transformer=target_transformer, is_path_dataset=True,
-                         test_transformer=test_transformer,
+                         transform=transform, target_transform=target_transform, is_path_dataset=True,
+                         test_transform=test_transform,
                          images_path="core50_128x128")
 
     def load_dataset(self) -> Tuple[Tuple[np.ndarray, np.ndarray], Tuple[list, list, list]]:

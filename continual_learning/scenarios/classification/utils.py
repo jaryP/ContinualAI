@@ -1,10 +1,11 @@
 from typing import Union, Sequence
 
-from continual_learning.datasets.base import SupervisedDataset, \
-    DatasetSplits, DatasetSplitContexView
+import numpy as np
+
+from continual_learning.datasets.base import DatasetSplitsContainer
 
 
-def get_dataset_subset_using_labels(dataset: SupervisedDataset,
+def get_dataset_subset_using_labels(dataset: DatasetSplitsContainer,
                                     labels: Union[int, Sequence]):
     if isinstance(labels, int):
         labels = [labels]
@@ -13,17 +14,20 @@ def get_dataset_subset_using_labels(dataset: SupervisedDataset,
     splits = {k: [] for k in keys}
 
     for v in keys:
-        ss = dataset.get_indexes(DatasetSplits(v))
-        if len(ss) == 0:
+        subset = dataset.get_split(v)
+        if len(subset) == 0:
             continue
-        with DatasetSplitContexView(dataset, DatasetSplits(v)) as d:
-            for i, (j, x, y) in enumerate(d):
-                if y in labels:
-                    splits[v].append(i)
+        ys = subset.targets
+        # w = np.where(np.in1d(ys, labels))[0]
+        # ss = subset.base_dataset_indexes
+        ss = subset.base_dataset_indexes[np.in1d(ys, labels)]
+
+        splits[v] = ss
 
     return dataset.get_subset(train_subset=splits['train'],
                               test_subset=splits['test'],
-                              dev_subset=splits['dev'])
+                              dev_subset=splits['dev'],
+                              as_splitted_dataset=True)
 
 
 

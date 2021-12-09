@@ -5,7 +5,7 @@ from continual_learning.methods.task_incremental.multi_task.gg\
     import BaseMultiTaskGGMethod
 from continual_learning.methods.task_incremental.multi_task.gg.piggyback.base\
     import PiggyBackLayer, ForwardHook
-from continual_learning.scenarios.tasks import SupervisedTask
+from continual_learning.scenarios.tasks import Task
 from continual_learning.solvers.base import Solver
 
 
@@ -27,7 +27,7 @@ class PiggyBack(BaseMultiTaskGGMethod):
                 setattr(model, name, PiggyBackLayer(l))
         print(model)
 
-    def get_parameters(self, task: SupervisedTask, backbone: nn.Module, solver: Solver):
+    def get_parameters(self, task: Task, backbone: nn.Module, solver: Solver):
         parameters = []
 
         for n, m in backbone.named_modules():
@@ -36,7 +36,7 @@ class PiggyBack(BaseMultiTaskGGMethod):
 
         return parameters
 
-    def set_task(self, backbone: nn.Module, task: SupervisedTask, **kwargs):
+    def set_task(self, backbone: nn.Module, task: Task, **kwargs):
         task_i = task.index
         if task_i == 0 or task_i not in self.task_masks:
             return
@@ -50,7 +50,7 @@ class PiggyBack(BaseMultiTaskGGMethod):
                 h = ForwardHook(m.layer, self.task_masks[task_i][n])
                 self.hooks.append(h)
 
-    def on_task_starts(self, backbone: nn.Module, task: SupervisedTask, *args, **kwargs):
+    def on_task_starts(self, backbone: nn.Module, task: Task, *args, **kwargs):
         for n, m in backbone.named_modules():
             if isinstance(m, PiggyBackLayer):
                 m.add_task()

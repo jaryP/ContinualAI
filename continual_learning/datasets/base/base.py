@@ -1,23 +1,79 @@
 import warnings
 
 from abc import ABC, abstractmethod
-from typing import Callable, Union, Tuple, List, Any, Sequence
+from typing import Callable, Union, Tuple, Any, Sequence
 
 import numpy as np
 from PIL import Image
 
-from . import DatasetSplits, DatasetType
+from continual_learning.datasets.base import DatasetSplits, DatasetType
 
 IndexesType = Union[list, np.ndarray]
 
 
-class Dataset(ABC):
-    @abstractmethod
-    def __getitem__(self, item):
-        raise NotImplementedError
-
-    def __len__(self, item):
-        raise NotImplementedError
+# class IterableDataset(ABC):
+#     def __init__(self, *,
+#                  values: IndexesType,
+#                  transformer: Callable = None,
+#                  is_path_dataset: bool = False,
+#                  images_path: str = None,
+#                  **kwargs):
+#
+#         if is_path_dataset and images_path is None:
+#             raise ValueError('If is_path_dataset=True, '
+#                              'then images_path must be not None')
+#
+#         self.images_path = images_path
+#         self.is_path_dataset = is_path_dataset
+#
+#         self.transformer = transformer \
+#             if transformer is not None else lambda z: z
+#
+#         self._values = values
+#
+#     @property
+#     def values(self):
+#         return self.values
+#
+#     def __len__(self, item):
+#         raise len(self.values)
+#
+#     def __getitem__(self, item: Union[slice, int, list, np.ndarray]) -> \
+#             Tuple[Sequence[int], Sequence[Any]]:
+#
+#         """
+#         Given an index, or a list of indexes (defined as list, tuple o slice), return the associated samples.
+#         :param item: The index, or more than one, used to fetch the samples in the dataset.
+#         :return: Return :param item: and the associated samples, modified by the transformer function.
+#         """
+#         to_map = False
+#
+#         if not isinstance(item, (np.integer, int)):
+#             to_map = True
+#             if isinstance(item, slice):
+#                 s = item.start if item.start is not None else 0
+#                 e = item.stop
+#                 step = item.step if item.step is not None else 1
+#                 item = list(range(s, e, step))
+#             elif isinstance(item, tuple):
+#                 item = list(item)
+#
+#         idxs = self.current_indexes[item]
+#
+#         if self.is_path_dataset:
+#             if to_map:
+#                 x = [Image.open(self._x[i]).convert('RGB') for i in idxs]
+#             else:
+#                 x = Image.open(self._x[idxs]).convert('RGB')
+#         else:
+#             x = self._x[idxs]
+#
+#         if to_map:
+#             x = list(map(self._get_transformer(), x))
+#         else:
+#             x = self._get_transformer()(x)
+#
+#         return item, x
 
 
 class IndexesContainer(object):
@@ -75,9 +131,12 @@ class IndexesContainer(object):
     def current_indexes(self) -> np.ndarray:
         return self.get_indexes(self.current_split)
 
-    def get_indexes(self, v: DatasetSplits = None) -> np.ndarray:
-        if v is None:
+    def get_indexes(self, v: Union[DatasetSplits, str] = None) -> np.ndarray:
+        if isinstance(v, str):
+            v = DatasetSplits(v)
+        elif v is None:
             return self.current_indexes
+
         if v == DatasetSplits.ALL:
             return np.concatenate((self._splits[DatasetSplits.TRAIN],
                                    self._splits[DatasetSplits.TEST],
@@ -150,7 +209,11 @@ class AbstractDataset(ABC, IndexesContainer):
                    dev_subset: IndexesType,
                    **kwargs):
         raise NotImplementedError
-        # return self.x(split)
+
+    @abstractmethod
+    def get_split(self, split: DatasetSplits,
+                  **kwargs):
+        raise NotImplementedError
 
     @abstractmethod
     def __getitem__(self, item: Union[tuple, slice, int, list, np.ndarray]) -> \
@@ -164,12 +227,12 @@ class AbstractDataset(ABC, IndexesContainer):
         # return self.x(split)
 
     @property
-    @abstractmethod
+    # @abstractmethod
     def x(self) -> np.ndarray:
         raise NotImplementedError
 
     @property
-    @abstractmethod
+    # @abstractmethod
     def y(self) -> np.ndarray:
         raise NotImplementedError
 
@@ -234,7 +297,6 @@ class UnsupervisedDataset(AbstractDataset):
             elif isinstance(item, tuple):
                 item = list(item)
 
-
         idxs = self.current_indexes[item]
 
         if self.is_path_dataset:
@@ -251,6 +313,11 @@ class UnsupervisedDataset(AbstractDataset):
             x = self._get_transformer()(x)
 
         return item, x
+
+    def get_split(self, split: DatasetSplits,
+                  **kwargs):
+        indexes = self.get_indexes(split)
+        return [(i, self._x[i]) for i in indexes]
 
     @property
     def x(self):
@@ -287,7 +354,7 @@ class UnsupervisedDataset(AbstractDataset):
                                    test_transformer=self.test_transformer)
 
 
-class SupervisedDataset(UnsupervisedDataset):
+class   SupervisedDataset(UnsupervisedDataset):
     """
     This class contains all the functions to operate with an _supervised dataset.
     It allows to use transformation (pytorch style) and to have all the dataset split (train, test, split) in one place.
@@ -374,6 +441,11 @@ class SupervisedDataset(UnsupervisedDataset):
 
         return item, x, y
 
+    def get_split(self, split: DatasetSplits,
+                  **kwargs):
+        indexes = self.get_indexes(split)
+        return [(i, self._x[i], self._y[i]) for i in indexes]
+
     @property
     def labels(self) -> tuple:
         """
@@ -431,3 +503,5 @@ class SupervisedDataset(UnsupervisedDataset):
                                  transformer=self.transformer,
                                  target_transformer=self.target_transformer,
                                  test_transformer=self.test_transformer)
+
+

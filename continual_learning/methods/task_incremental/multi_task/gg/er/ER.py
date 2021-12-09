@@ -9,7 +9,7 @@ import torch.nn.functional as F
 from continual_learning.methods.task_incremental.multi_task.gg \
     import BaseMultiTaskGGMethod
 from continual_learning.methods.base import BaseMethod
-from continual_learning.scenarios.tasks import SupervisedTask
+from continual_learning.scenarios.tasks import Task
 
 
 class EmbeddingRegularization(BaseMultiTaskGGMethod):
@@ -58,7 +58,7 @@ class EmbeddingRegularization(BaseMultiTaskGGMethod):
 
         self.task_memory = []
 
-    def on_task_ends(self, task: SupervisedTask, backbone: torch.nn.Module, *args, **kwargs):
+    def on_task_ends(self, task: Task, backbone: torch.nn.Module, *args, **kwargs):
 
         task.train()
 
