@@ -133,15 +133,15 @@ class BaseDataset(AbstractDataset):
         rets = []
         for i in item:
             if self.is_path_dataset:
-                x = self.path_loading_function(self.values[i])
+                x = self.path_loading_function(self._values[i])
             else:
-                x = self.values[i]
+                x = self._values[i]
 
             if self._use_transform:
                 x = self.transform(x)
 
             if self.dataset_type == DatasetType.SUPERVISED:
-                y = self.targets[i]
+                y = self._targets[i]
 
                 if self._use_transform:
                     y = self.target_transform(y)
@@ -465,8 +465,7 @@ class DatasetSplitsContainer(AbstractDataset):
     def use_transform(self, v: bool):
         self.current_split.use_transform(v)
 
-    def get_split(self, split: Union[DatasetSplits, str],
-                  **kwargs) -> BaseDataset:
+    def get_split(self, split: Union[DatasetSplits, str]) -> D:
         if isinstance(split, str):
             split = DatasetSplits(split)
 

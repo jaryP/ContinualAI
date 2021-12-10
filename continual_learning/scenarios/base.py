@@ -4,7 +4,7 @@ __all__ = ['StreamDataset',
 
 from abc import ABC, abstractmethod
 from functools import wraps
-from typing import Union, Tuple
+from typing import Union, Tuple, Sequence, Any
 
 import numpy as np
 
@@ -98,15 +98,15 @@ class AbstractTask(ABC):
         return self._base_dataset
 
     @property
-    def classes(self, **kwargs):
+    def classes(self) -> int:
         return self.base_dataset.classes
 
     @property
-    def values(self, **kwargs):
+    def values(self) -> Sequence[Any]:
         return self.base_dataset.values
 
     @property
-    def targets(self, **kwargs):
+    def targets(self) -> Sequence[Any]:
         return self.base_dataset.targets
 
     @conditional_split_property
@@ -130,11 +130,15 @@ class AbstractTask(ABC):
         return self.base_dataset.current_dataset
 
     @conditional_split_function
+    def get_split(self, split: Union[DatasetSplits, str]):
+        self.base_dataset.get_split(split)
+
+    @conditional_split_function
     def train(self) -> None:
         self.base_dataset.train()
 
     @conditional_split_function
-    def train_split(self) -> AbstractDataset:
+    def train_split(self) -> DatasetSplitsContainer:
         return self.base_dataset.train_split()
 
     @conditional_split_function
@@ -142,7 +146,7 @@ class AbstractTask(ABC):
         self.base_dataset.test()
 
     @conditional_split_function
-    def test_split(self) -> AbstractDataset:
+    def test_split(self) -> DatasetSplitsContainer:
         return self.base_dataset.test_split()
 
     @conditional_split_function
@@ -150,7 +154,11 @@ class AbstractTask(ABC):
         self.base_dataset.dev()
 
     @conditional_split_function
-    def dev_split(self) -> AbstractDataset:
+    def dev_split(self) -> DatasetSplitsContainer:
+        return self.get_dataset(DatasetSplits.DEV)
+
+    @conditional_split_function
+    def dev_split(self) -> DatasetSplitsContainer:
         return self.get_dataset(DatasetSplits.DEV)
 
     def get_subset(self,

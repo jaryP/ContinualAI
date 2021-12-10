@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 import numpy as np
 import unittest
 from continual_learning.datasets import MNIST
@@ -7,7 +9,8 @@ from continual_learning.datasets import MNIST
 #     SupervisedDataset, DatasetSubsetView, DatasetSplits
 # from continual_learning.scenarios.classification.utils import \
 #     get_dataset_subset_using_labels
-from continual_learning.datasets.base import DatasetSplits
+from continual_learning.datasets.base import DatasetSplits, \
+    add_dev_split_to_container
 
 
 class mnist_tests(unittest.TestCase):
@@ -30,6 +33,18 @@ class mnist_tests(unittest.TestCase):
 
         dataset.train()
         print(dataset[0][1].shape)
+
+    def test_add_dev(self):
+        dataset = MNIST(download_if_missing=True,
+                        data_folder='../downloaded_dataset/mnist/')
+        dataset = add_dev_split_to_container(dataset, 0.1)
+
+        lens = defaultdict(int)
+        for s in ['dev', 'train', 'test']:
+            dataset.current_split = s
+            ln = len([_ for i, _ in enumerate(dataset)])
+            lens[s] = ln
+            print(lens)
 
     def test_subset(self):
         dataset = MNIST(download_if_missing=True,
