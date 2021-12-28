@@ -10,7 +10,7 @@ from continual_learning.datasets import MNIST
 # from continual_learning.scenarios.classification.utils import \
 #     get_dataset_subset_using_labels
 from continual_learning.datasets.base import DatasetSplits, \
-    add_dev_split_to_container
+    create_dev_dataset
 
 
 class mnist_tests(unittest.TestCase):
@@ -35,16 +35,39 @@ class mnist_tests(unittest.TestCase):
         print(dataset[0][1].shape)
 
     def test_add_dev(self):
+        from collections import Counter
+
         dataset = MNIST(download_if_missing=True,
                         data_folder='../downloaded_dataset/mnist/')
-        dataset = add_dev_split_to_container(dataset, 0.1)
+        print(Counter(dataset.get_split('train').targets))
+
+        dataset = create_dev_dataset(dataset, 0.1,
+                                     from_test=False,
+                                     balanced=True)
 
         lens = defaultdict(int)
         for s in ['dev', 'train', 'test']:
-            dataset.current_split = s
-            ln = len([_ for i, _ in enumerate(dataset)])
+            split = dataset.get_split(s)
+            ln = len([_ for i, _ in enumerate(split)])
             lens[s] = ln
             print(lens)
+            ctr = Counter(split.targets)
+            print(s, sum(ctr.values()), ctr, len(split.targets))
+
+        dataset = MNIST(download_if_missing=True,
+                        data_folder='../downloaded_dataset/mnist/')
+        train, test, dev = create_dev_dataset(dataset, 0.1,
+                                              from_test=False,
+                                              balanced=True, as_container=False)
+        print()
+        print(Counter(train.targets))
+
+        for split in [train, test, dev]:
+            ln = len([_ for i, _ in enumerate(split)])
+            lens[s] = ln
+            print(lens)
+            ctr = Counter(split.targets)
+            print(sum(ctr.values()), ctr, len(split.targets))
 
     def test_subset(self):
         dataset = MNIST(download_if_missing=True,
@@ -163,7 +186,7 @@ class mnist_tests(unittest.TestCase):
 
         print(len(new_dataset.get_indexes(DatasetSplits.TEST)),
               len(new_dataset.get_indexes(DatasetSplits.TRAIN)))
-        
+
         print(len(dataset.get_indexes(DatasetSplits.TEST)),
               len(dataset.get_indexes(DatasetSplits.TRAIN)))
 

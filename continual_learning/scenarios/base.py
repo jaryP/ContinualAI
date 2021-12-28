@@ -98,7 +98,7 @@ class AbstractTask(ABC):
         return self._base_dataset
 
     @property
-    def classes(self) -> int:
+    def classes(self) -> Union[Sequence[int], None]:
         return self.base_dataset.classes
 
     @property
@@ -110,7 +110,7 @@ class AbstractTask(ABC):
         return self.base_dataset.targets
 
     @conditional_split_property
-    def current_split(self) -> BaseDataset:
+    def current_split(self) -> DatasetSplits:
         return self.base_dataset.current_split
 
     @current_split.setter

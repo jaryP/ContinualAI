@@ -18,8 +18,6 @@ def get_dataset_subset_using_labels(dataset: DatasetSplitsContainer,
         if len(subset) == 0:
             continue
         ys = subset.targets
-        # w = np.where(np.in1d(ys, labels))[0]
-        # ss = subset.base_dataset_indexes
         ss = subset.base_dataset_indexes[np.in1d(ys, labels)]
 
         splits[v] = ss

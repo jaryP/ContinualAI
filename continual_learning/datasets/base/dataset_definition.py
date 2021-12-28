@@ -9,7 +9,17 @@ import numpy as np
 from . import path_image_loading, DatasetSplits, DatasetType
 
 IndexesType = Union[list, np.ndarray]
+
 D = TypeVar('D', bound='AbstractDataset')
+
+Va_T = TypeVar('Va_T')
+Ta_T = TypeVar('Ta_T')
+
+Tva_T = TypeVar('Tva_T')
+
+C_R_T = Union[Sequence[int], None]
+Ta_R_T = Union[Sequence[Ta_T], None]
+Va_R_T = Union[Sequence[Va_T], None]
 
 
 class AbstractDataset(ABC):
@@ -19,39 +29,39 @@ class AbstractDataset(ABC):
 
     @property
     @abstractmethod
-    def classes(self, **kwargs):
+    def classes(self) -> C_R_T:
         raise NotImplementedError
 
     @property
     @abstractmethod
-    def values(self, **kwargs):
+    def values(self) -> Va_R_T:
         raise NotImplementedError
 
     @property
     @abstractmethod
-    def targets(self, **kwargs):
+    def targets(self) -> Ta_R_T:
         raise NotImplementedError
 
     @abstractmethod
-    def __len__(self):
+    def __len__(self) -> int:
         raise NotImplementedError
 
     @abstractmethod
-    def __getitem__(self, item):
+    def __getitem__(self, item) -> Sequence[Union[int, Va_T, Ta_T]]:
         raise NotImplementedError
 
     @abstractmethod
-    def get_subset(self, items, **kwargs):
+    def get_subset(self, items, **kwargs) -> D:
         raise NotImplementedError
 
 
 class BaseDataset(AbstractDataset):
     def __init__(self,
                  *,
-                 values: IndexesType,
+                 values: Sequence[Va_T],
                  transform: Callable = None,
                  target_transform: Callable = None,
-                 targets: IndexesType = None,
+                 targets: Sequence[Ta_T] = None,
                  is_path_dataset: bool = False,
                  images_path: str = None,
                  path_loading_function: Callable = None,
@@ -73,47 +83,49 @@ class BaseDataset(AbstractDataset):
 
             self.dataset_type = DatasetType.SUPERVISED
 
-        self.images_path = images_path
-        self.is_path_dataset = is_path_dataset
-        self.path_loading_function = path_loading_function \
-            if path_loading_function is not None else path_image_loading
+        self.images_path: str = images_path
+        self.is_path_dataset: bool = is_path_dataset
+        self.path_loading_function: Callable[[str], Va_T] = \
+            path_loading_function \
+                if path_loading_function is not None else path_image_loading
 
-        self.transform = transform \
+        self.transform: Callable[[Va_T], Any] = transform \
             if transform is not None else lambda z: z
 
-        self.target_transform = target_transform \
+        self.target_transform: Callable[[Ta_T], Any] = target_transform \
             if target_transform is not None else lambda z: z
 
-        self._use_transform = True
+        self._use_transform: bool = True
 
-        self._targets = targets
-        self._values = values
+        self._targets: Ta_T = targets
+        self._values: Va_T = values
 
     @property
-    def base_dataset_indexes(self):
+    def base_dataset_indexes(self) -> Sequence[int]:
         return np.arange(len(self))
 
     @property
-    def classes(self):
+    def classes(self) -> C_R_T:
         if self.targets is None:
             return None
         return sorted(list(set(self.targets)))
 
     @property
-    def values(self):
+    def values(self) -> Va_R_T:
         return self._values
 
     @property
-    def targets(self):
+    def targets(self) -> Ta_R_T:
         if self.dataset_type != DatasetType.SUPERVISED:
             return None
         return self._targets
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.values)
 
     def __getitem__(self, item: Union[slice, int, list, np.ndarray]) -> \
-            Tuple[Sequence[int], Sequence[Any]]:
+            Tuple[Sequence[int], Union[Tuple[Sequence[Any], Sequence[Any]],
+                                       Sequence[Any]]]:
 
         to_map = False
 
@@ -154,12 +166,12 @@ class BaseDataset(AbstractDataset):
 
         return rets if to_map else rets[0]
 
-    def use_transform(self, v: bool):
+    def use_transform(self, v: bool) -> None:
         self._use_transform = v
 
     def get_subset(self,
                    subset: IndexesType,
-                   **kwargs) -> D:
+                   **kwargs) -> 'DatasetSubset':
 
         if subset is None or len(subset) == 0:
             raise ValueError('The parameter subset is empty or None.')
@@ -176,11 +188,13 @@ class BaseDataset(AbstractDataset):
 
 class DatasetSubset(BaseDataset):
     def __init__(self, *,
-                 values: IndexesType,
+                 values: Sequence[Va_T],
+
                  subset: IndexesType,
                  transform: Callable = None,
                  target_transform: Callable = None,
-                 targets: IndexesType = None,
+
+                 targets: Sequence[Ta_T] = None,
                  is_path_dataset: bool = False,
                  images_path: str = None,
                  path_loading_function: Callable = None,
@@ -199,7 +213,7 @@ class DatasetSubset(BaseDataset):
                                  f'the minimum value is '
                                  f'lower that 0 ({min(subset)})')
 
-        self._subset = np.asarray(subset)
+        self._subset: Sequence[int] = np.asarray(subset)
 
         super().__init__(values=values, transform=transform,
                          target_transform=target_transform, targets=targets,
@@ -208,29 +222,28 @@ class DatasetSubset(BaseDataset):
                          path_loading_function=path_loading_function, **kwargs)
 
     @property
-    def base_dataset_indexes(self):
+    def base_dataset_indexes(self) -> Sequence[int]:
         return self._subset
 
     @property
-    def classes(self):
+    def classes(self) -> C_R_T:
         if self.targets is None:
             return None
         return sorted(list(set(self.targets)))
 
     @property
-    def values(self):
+    def values(self) -> Va_R_T:
         return [self._values[s] for s in self._subset]
 
     @property
-    def targets(self):
+    def targets(self) -> Ta_R_T:
         if self.dataset_type != DatasetType.SUPERVISED:
             return None
         #     warnings.warn('The dataset is not supervised.',
         #                   RuntimeWarning)
-
         return [self._targets[s] for s in self._subset]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._subset)
 
     def __getitem__(self, item: Union[slice, int, list, np.ndarray]) -> \
@@ -248,7 +261,12 @@ class DatasetSubset(BaseDataset):
         else:
             s = self._subset[item]
 
-        return super().__getitem__(s)
+        if self.dataset_type == DatasetType.SUPERVISED:
+            _, x, y = super().__getitem__(s)
+            return item, x, y
+        else:
+            _, x = super().__getitem__(s)
+            return item, x
 
 
 class DatasetSplitsContainer(AbstractDataset):
@@ -351,13 +369,13 @@ class DatasetSplitsContainer(AbstractDataset):
                 DatasetSplits.DEV: d_dev,
             }
 
-        self._current_split = DatasetSplits.TRAIN
+        self._current_split: DatasetSplits = DatasetSplits.TRAIN
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._splits[self._current_split])
 
     @property
-    def current_split(self) -> BaseDataset:
+    def current_split(self) -> DatasetSplits:
         return self._current_split
 
     @current_split.setter
@@ -373,29 +391,29 @@ class DatasetSplitsContainer(AbstractDataset):
             self.dev()
 
     @property
-    def current_dataset(self):
+    def current_dataset(self) -> AbstractDataset:
         return self._splits[self.current_split]
 
     @property
-    def classes(self):
+    def classes(self) -> C_R_T:
         targets = self.current_dataset.targets
         if targets is None:
             return None
         return sorted(list(set(targets)))
 
     @property
-    def values(self):
+    def values(self) -> Va_R_T:
         return self.current_dataset.values
 
     @property
-    def targets(self):
+    def targets(self) -> Ta_R_T:
         return self.current_dataset.targets
 
     @property
-    def base_dataset_indexes(self):
+    def base_dataset_indexes(self) -> Sequence[int]:
         return self.current_split.base_dataset_indexes
 
-    def get_dataset_indexes(self, v: DatasetSplits):
+    def get_dataset_indexes(self, v: DatasetSplits) -> Sequence[int]:
         return self.get_split(v).base_dataset_indexes
 
     def train(self) -> None:
@@ -427,7 +445,8 @@ class DatasetSplitsContainer(AbstractDataset):
                    test_subset: IndexesType = None,
                    dev_subset: IndexesType = None,
                    as_splitted_dataset: bool = False,
-                   **kwargs) -> Union[D, Tuple[D, D, D]]:
+                   **kwargs) -> Union['DatasetSplitsContainer',
+                                      Tuple[D, D, D]]:
 
         if train_subset is None:
             train_subset = []
@@ -462,7 +481,7 @@ class DatasetSplitsContainer(AbstractDataset):
         else:
             return train, test, dev
 
-    def use_transform(self, v: bool):
+    def use_transform(self, v: bool) -> None:
         self.current_split.use_transform(v)
 
     def get_split(self, split: Union[DatasetSplits, str]) -> D:
@@ -481,7 +500,7 @@ class DatasetSplitsContainer(AbstractDataset):
 
 
 class DownloadableDataset(DatasetSplitsContainer, ABC):
-
+    # TODO: Types Hints
     def __init__(self,
                  *,
                  name: str,

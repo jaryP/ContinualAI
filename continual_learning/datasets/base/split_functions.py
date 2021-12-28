@@ -3,7 +3,7 @@
 from collections import defaultdict
 from copy import deepcopy
 
-from typing import Union, Tuple
+from typing import Union, Tuple, Counter
 
 import numpy as np
 #
@@ -170,6 +170,9 @@ from continual_learning.datasets.base import DatasetSplitsContainer, \
 #
 #     return new_dataset
 
+def _get_indexes():
+    pass
+
 
 def _base_dataset_split(dataset: Union[DatasetSubset, BaseDataset],
                         random_state: np.random.RandomState,
@@ -204,7 +207,6 @@ def create_dataset_with_new_split(dataset: AbstractDataset,
                                   random_state: Union[np.random.RandomState,
                                                       int] = None,
                                   as_dataset_container: bool = False):
-
     if 0 >= test_percentage > 1:
         raise ValueError(f'test_percentage must be in [0, 1) '
                          f'({test_percentage})')
@@ -231,10 +233,10 @@ def create_dataset_with_new_split(dataset: AbstractDataset,
                                                random_state=random_state)
     elif isinstance(dataset, DatasetSplitsContainer):
         train, test, dev = \
-            add_dev_split_to_container(dataset=dataset,
-                                       dev_percentage=dev_percentage,
-                                       as_container=False,
-                                       random_state=random_state)
+            create_dev_dataset(dataset=dataset,
+                               dev_percentage=dev_percentage,
+                               as_container=False,
+                               random_state=random_state)
     else:
         assert False
 
@@ -244,27 +246,29 @@ def create_dataset_with_new_split(dataset: AbstractDataset,
         return train, test, dev
 
 
-def add_dev_split_to_container(dataset: DatasetSplitsContainer,
-                               dev_percentage: float = 0.1,
-                               from_test: bool = False,
-                               random_state: Union[np.random.RandomState,
-                                                   int] = None,
-                               as_container: bool = True,
-                               ) -> Union[DatasetSplitsContainer,
-                                          Tuple[AbstractDataset,
-                                                AbstractDataset,
-                                                AbstractDataset]]:
-    if isinstance(random_state, int):
-        random_state = np.random.RandomState(random_state)
-    else:
-        random_state = np.random.RandomState(None)
+def create_dev_dataset(dataset: DatasetSplitsContainer,
+                       dev_percentage: float = 0.1,
+                       from_test: bool = False,
+                       random_state: Union[np.random.RandomState,
+                                           int] = None,
+                       as_container: bool = True,
+                       balanced: bool = True
+                       ) -> Union[DatasetSplitsContainer,
+                                  Tuple[DatasetSubset,
+                                        DatasetSubset,
+                                        DatasetSubset]]:
+
+    if not isinstance(random_state, np.random.RandomState):
+        if isinstance(random_state, int):
+            random_state = np.random.RandomState(random_state)
+        else:
+            random_state = np.random.RandomState(None)
 
     if 0 >= dev_percentage > 1:
         raise ValueError(f'dev_percentage must be in [0, 1) '
                          f'({dev_percentage})')
 
-    dev = dataset.dev_split()
-    if len(dev) > 0:
+    if len(dataset.dev_split()) > 0:
         raise ValueError(f'The dataset already has a dev split')
 
     if from_test and len(dataset.test_split()) == 0:
@@ -276,13 +280,27 @@ def add_dev_split_to_container(dataset: DatasetSplitsContainer,
     else:
         source = dataset.train_split()
 
-    index_list = np.arange(len(source))
-    random_state.shuffle(index_list)
+    if balanced:
+        dev_idx = []
+        source_idx = []
 
-    _dev_split = int(len(index_list) * dev_percentage)
+        classes = source.classes
+        targets = source.targets
 
-    dev_idx = index_list[: _dev_split]
-    source_idx = index_list[_dev_split:]
+        for i in classes:
+            idx = np.arange(len(targets))[np.in1d(targets, i)]
+            random_state.shuffle(idx)
+            _dev_split = int(len(idx) * dev_percentage)
+
+            dev_idx.extend(idx[: _dev_split])
+            source_idx.extend(idx[_dev_split:])
+    else:
+        index_list = np.arange(len(source))
+        random_state.shuffle(index_list)
+        _dev_split = int(len(index_list) * dev_percentage)
+
+        dev_idx = index_list[: _dev_split]
+        source_idx = index_list[_dev_split:]
 
     dev = source.get_subset(dev_idx)
     source_subset = source.get_subset(source_idx)
@@ -298,7 +316,6 @@ def add_dev_split_to_container(dataset: DatasetSplitsContainer,
         return DatasetSplitsContainer(train=train, test=test, dev=dev)
     else:
         return train, test, dev
-
 
 # def _create_dataset_with_new_split(dataset: AbstractDataset,
 #                                    test_percentage: float = 0.2,

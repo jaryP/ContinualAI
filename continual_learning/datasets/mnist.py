@@ -51,7 +51,7 @@ class MNIST(DownloadableDataset):
         parsed = np.frombuffer(data, dtype=np.uint8, offset=8)
         parsed = parsed.reshape((length, -1))
         parsed = np.squeeze(parsed)
-        return parsed
+        return parsed.astype(int)
 
     def download_dataset(self):
         for _, type in self.url.items():

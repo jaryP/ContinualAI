@@ -6,6 +6,7 @@ from PIL import Image
 def path_image_loading(path):
     return Image.open(path).convert('RGB')
 
+
 @unique
 class DatasetSplits(Enum):
     TRAIN = 'train'
@@ -25,6 +26,7 @@ class DatasetProblem(Enum):
     CLASSIFICATION = 0
     REGRESSION = 1
 
+
 from .dataset_definition import AbstractDataset, \
     DatasetSplitsContainer, \
     BaseDataset, \
@@ -38,4 +40,4 @@ from .dataset_definition import AbstractDataset, \
 #     DatasetSplitContexView
 
 from .split_functions import create_dataset_with_new_split, \
-    add_dev_split_to_container
+    create_dev_dataset

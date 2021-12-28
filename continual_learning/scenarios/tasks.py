@@ -89,7 +89,6 @@ class Task(AbstractTask):
         if len(a) == 3:
             i, x, y = a
             y = self._map_labels(y)
-
         else:
             i, x = a
 
