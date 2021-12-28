@@ -2,7 +2,7 @@ __all__ = ['Task',
            'SupervisedTransformerTask',
            'TransformerTask']
 
-from typing import Union, Callable, Any
+from typing import Union, Callable, Any, List
 from continual_learning.datasets.base import AbstractDataset, DatasetType
 from continual_learning.scenarios.base import AbstractTask
 
