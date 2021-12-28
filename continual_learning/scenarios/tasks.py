@@ -29,28 +29,28 @@ class Task(AbstractTask):
         if self._dataset_classes is not None:
             self._task_classes = sorted(self._map_labels(self._dataset_classes))
 
-    def use_task_labels(self):
+    def use_task_labels(self) -> None:
         self._task_labels = True
 
-    def use_dataset_labels(self):
+    def use_dataset_labels(self) -> None:
         self._task_labels = False
 
     @property
-    def task_labels(self):
+    def task_labels(self) -> List[int]:
         return self._task_classes
 
     @property
-    def dataset_labels(self):
+    def dataset_labels(self) -> List[int]:
         return self._dataset_classes
 
     @property
-    def classes(self):
+    def classes(self) -> List[int]:
         if self._task_labels:
             return self.task_labels
         else:
             return self.dataset_labels
 
-    def _map_labels(self, y):
+    def _map_labels(self, y) :
         if self.labels_mapping is None:
             return y
 
